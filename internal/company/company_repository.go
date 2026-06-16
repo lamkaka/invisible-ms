@@ -141,12 +141,39 @@ func (r *SpannerCompanyRepository) List(ctx context.Context) ([]*Company, error)
 }
 
 func (r *SpannerCompanyRepository) Update(ctx context.Context, company *Company) error {
-	m := spanner.Update("companies",
-		[]string{"company_code", "company_name"},
-		[]interface{}{company.CompanyCode, company.CompanyName},
-	)
+	_, err := r.client.ReadWriteTransaction(ctx, func(txnCtx context.Context, txn *spanner.ReadWriteTransaction) error {
+		// Delete existing roles
+		delStmt := spanner.Statement{
+			SQL:    "DELETE FROM company_roles WHERE company_code = @code",
+			Params: map[string]interface{}{"code": company.CompanyCode},
+		}
+		_, err := txn.Update(txnCtx, delStmt)
+		if err != nil {
+			return err
+		}
 
-	_, err := r.client.Apply(ctx, []*spanner.Mutation{m})
+		// Update company name
+		companyM := spanner.Update("companies",
+			[]string{"company_code", "company_name"},
+			[]interface{}{company.CompanyCode, company.CompanyName},
+		)
+		if err := txn.BufferWrite([]*spanner.Mutation{companyM}); err != nil {
+			return err
+		}
+
+		// Insert current roles
+		for _, role := range company.Roles {
+			roleM := spanner.Insert("company_roles",
+				[]string{"company_code", "role_name", "hourly_rate"},
+				[]interface{}{company.CompanyCode, role.Name, role.HourlyRate},
+			)
+			if err := txn.BufferWrite([]*spanner.Mutation{roleM}); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
 	if err != nil {
 		return fmt.Errorf("failed to update company: %w", err)
 	}

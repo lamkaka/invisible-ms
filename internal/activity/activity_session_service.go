@@ -2,6 +2,7 @@ package activity
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/scalica/ims/internal/company"
@@ -27,6 +28,16 @@ func NewSessionService(activityRepo ActivityRepository, companyService *company.
 		activityRepo:   activityRepo,
 		companyService: companyService,
 	}
+}
+
+func (s *SessionService) GetActivities(ctx context.Context, workerID, companyCode string, from, to time.Time) ([]*ActivityLog, error) {
+	if workerID != "" {
+		return s.activityRepo.GetByWorker(ctx, workerID, from, to)
+	}
+	if companyCode != "" {
+		return s.activityRepo.GetByCompany(ctx, companyCode, from, to)
+	}
+	return nil, fmt.Errorf("either worker_id or company_code is required")
 }
 
 func (s *SessionService) GetSessions(ctx context.Context, companyCode string, from, to time.Time) ([]*Session, error) {

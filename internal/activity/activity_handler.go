@@ -61,12 +61,14 @@ func (h *ActivityHandler) ListActivities(w http.ResponseWriter, r *http.Request)
 		to = time.Now()
 	}
 
-	// TODO: Implement GetByWorker in handler
-	_ = workerID
-	_ = companyCode
+	logs, err := h.sessionService.GetActivities(r.Context(), workerID, companyCode, from, to)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode([]ActivityLog{})
+	json.NewEncoder(w).Encode(logs)
 }
 
 func (h *ActivityHandler) ListSessions(w http.ResponseWriter, r *http.Request) {
