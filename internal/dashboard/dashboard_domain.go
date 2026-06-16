@@ -3,9 +3,10 @@ package dashboard
 import "time"
 
 type DashboardStats struct {
-	TodayOverview  TodayOverview  `json:"today_overview"`
-	CostTracking   CostTracking   `json:"cost_tracking"`
-	WorkerActivity WorkerActivity `json:"worker_activity"`
+	TodayOverview       TodayOverview     `json:"today_overview"`
+	CostTracking        CostTracking      `json:"cost_tracking"`
+	WorkerActivity      WorkerActivity    `json:"worker_activity"`
+	ActionTypeBreakdown []ActionTypeCount `json:"action_type_breakdown"`
 }
 
 type TodayOverview struct {
@@ -48,4 +49,9 @@ type OvertimeAlert struct {
 	WorkerName string  `json:"worker_name"`
 	Hours      float64 `json:"hours"`
 	Threshold  float64 `json:"threshold"`
+}
+
+type ActionTypeCount struct {
+	ActionType string `json:"action_type"`
+	Count      int    `json:"count"`
 }

@@ -16,6 +16,7 @@ type DashboardRepository interface {
 	GetCostForPeriod(ctx context.Context, companyCode string, from, to time.Time) (float64, error)
 	GetCostByRole(ctx context.Context, companyCode string, from, to time.Time) (map[string]float64, error)
 	GetWorkerStats(ctx context.Context, companyCode string, from, to time.Time) ([]WorkerStats, error)
+	GetActionTypeBreakdown(ctx context.Context, companyCode string, from, to time.Time) ([]ActionTypeCount, error)
 }
 
 type SpannerDashboardRepository struct {
@@ -373,4 +374,45 @@ func (r *SpannerDashboardRepository) queryLogsWithRates(ctx context.Context, com
 	}
 
 	return logs, nil
+}
+
+func (r *SpannerDashboardRepository) GetActionTypeBreakdown(ctx context.Context, companyCode string, from, to time.Time) ([]ActionTypeCount, error) {
+	stmt := spanner.Statement{
+		SQL: `SELECT action_type, COUNT(*) as cnt
+		      FROM activity_logs
+		      WHERE company_code = @company
+		        AND timestamp >= @from
+		        AND timestamp < @to
+		      GROUP BY action_type
+		      ORDER BY cnt DESC`,
+		Params: map[string]interface{}{
+			"company": companyCode,
+			"from":    from,
+			"to":      to,
+		},
+	}
+
+	iter := r.client.Single().Query(ctx, stmt)
+	defer iter.Stop()
+
+	var result []ActionTypeCount
+	for {
+		row, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return nil, fmt.Errorf("failed to query action type breakdown: %w", err)
+		}
+
+		var atc ActionTypeCount
+		var count int64
+		if err := row.Columns(&atc.ActionType, &count); err != nil {
+			return nil, fmt.Errorf("failed to parse action type count: %w", err)
+		}
+		atc.Count = int(count)
+		result = append(result, atc)
+	}
+
+	return result, nil
 }

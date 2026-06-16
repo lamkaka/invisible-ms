@@ -224,6 +224,21 @@
                 </div>
             </div>
         </section>
+
+        <!-- Action Type Breakdown Section -->
+        <section class="section" x-show="(stats?.action_type_breakdown ?? []).length > 0">
+            <h2 class="section-title">Activity Breakdown</h2>
+            <div class="stats-grid stats-grid--three">
+                <template x-for="item in stats?.action_type_breakdown ?? []" :key="item.action_type">
+                    <div class="stat-card">
+                        <div class="stat-content">
+                            <span class="stat-value" x-text="item.count"></span>
+                            <span class="stat-label" x-text="item.action_type.replace(/_/g, ' ')"></span>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </section>
     </div>
 </div>
 {{end}}

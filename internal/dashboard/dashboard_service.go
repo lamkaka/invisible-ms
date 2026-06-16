@@ -58,6 +58,11 @@ func (s *DashboardService) GetStats(ctx context.Context, companyCode string) (*D
 		return nil, err
 	}
 
+	actionTypeBreakdown, err := s.repo.GetActionTypeBreakdown(ctx, companyCode, today, time.Now())
+	if err != nil {
+		return nil, err
+	}
+
 	return &DashboardStats{
 		TodayOverview: TodayOverview{
 			CurrentlyWorking: len(activeWorkers),
@@ -74,5 +79,6 @@ func (s *DashboardService) GetStats(ctx context.Context, companyCode string) (*D
 		WorkerActivity: WorkerActivity{
 			MostActiveWorkers: workerStats,
 		},
+		ActionTypeBreakdown: actionTypeBreakdown,
 	}, nil
 }
