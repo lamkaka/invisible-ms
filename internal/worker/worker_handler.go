@@ -2,9 +2,12 @@ package worker
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/gorilla/mux"
+
+	"github.com/scalica/ims/internal/shared"
 )
 
 type WorkerHandler struct {
@@ -52,6 +55,10 @@ func (h *WorkerHandler) CreateWorker(w http.ResponseWriter, r *http.Request) {
 
 	worker, err := h.service.CreateWorker(r.Context(), req.WorkerID, req.PhoneNumber, req.Name, req.CompanyCode, req.Roles)
 	if err != nil {
+		if shared.IsAlreadyExists(err) {
+			http.Error(w, err.Error(), http.StatusConflict)
+			return
+		}
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -67,7 +74,11 @@ func (h *WorkerHandler) GetWorker(w http.ResponseWriter, r *http.Request) {
 
 	worker, err := h.service.GetWorker(r.Context(), id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+		if shared.IsNotFound(err) {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -90,6 +101,14 @@ func (h *WorkerHandler) AssignRole(w http.ResponseWriter, r *http.Request) {
 
 	err := h.service.AssignRole(r.Context(), id, req.RoleName)
 	if err != nil {
+		if shared.IsNotFound(err) {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
+		if errors.Is(err, ErrRoleAlreadyAssigned) {
+			http.Error(w, err.Error(), http.StatusConflict)
+			return
+		}
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -104,6 +123,10 @@ func (h *WorkerHandler) UnassignRole(w http.ResponseWriter, r *http.Request) {
 
 	err := h.service.UnassignRole(r.Context(), id, role)
 	if err != nil {
+		if shared.IsNotFound(err) {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}

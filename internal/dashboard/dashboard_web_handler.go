@@ -1,6 +1,7 @@
 package dashboard
 
 import (
+	"fmt"
 	"html/template"
 	"net/http"
 	"path/filepath"
@@ -11,12 +12,23 @@ import (
 type DashboardWebHandler struct {
 	service     *DashboardService
 	templateDir string
+	templates   *template.Template
 }
 
 func NewDashboardWebHandler(service *DashboardService, templateDir string) (*DashboardWebHandler, error) {
+	tmpl, err := template.ParseFiles(
+		filepath.Join(templateDir, "layout.html"),
+		filepath.Join(templateDir, "dashboard.html"),
+		filepath.Join(templateDir, "workers.html"),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse templates: %w", err)
+	}
+
 	return &DashboardWebHandler{
 		service:     service,
 		templateDir: templateDir,
+		templates:   tmpl,
 	}, nil
 }
 
@@ -40,27 +52,15 @@ func (h *DashboardWebHandler) DashboardPage(w http.ResponseWriter, r *http.Reque
 		Stats: stats,
 	}
 
-	tmpl, err := template.ParseFiles(
-		filepath.Join(h.templateDir, "layout.html"),
-		filepath.Join(h.templateDir, "dashboard.html"),
-	)
-	if err != nil {
+	if err := h.templates.ExecuteTemplate(w, "layout.html", data); err != nil {
 		http.Error(w, "Template error: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
-
-	tmpl.ExecuteTemplate(w, "layout.html", data)
 }
 
 func (h *DashboardWebHandler) WorkersPage(w http.ResponseWriter, r *http.Request) {
-	tmpl, err := template.ParseFiles(
-		filepath.Join(h.templateDir, "layout.html"),
-		filepath.Join(h.templateDir, "workers.html"),
-	)
-	if err != nil {
+	if err := h.templates.ExecuteTemplate(w, "layout.html", nil); err != nil {
 		http.Error(w, "Template error: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
-
-	tmpl.ExecuteTemplate(w, "layout.html", nil)
 }

@@ -2,9 +2,12 @@ package company
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/gorilla/mux"
+
+	"github.com/scalica/ims/internal/shared"
 )
 
 type CompanyHandler struct {
@@ -47,6 +50,10 @@ func (h *CompanyHandler) CreateCompany(w http.ResponseWriter, r *http.Request) {
 
 	company, err := h.service.CreateCompany(r.Context(), req.CompanyCode, req.CompanyName)
 	if err != nil {
+		if shared.IsAlreadyExists(err) {
+			http.Error(w, err.Error(), http.StatusConflict)
+			return
+		}
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -62,7 +69,11 @@ func (h *CompanyHandler) GetCompany(w http.ResponseWriter, r *http.Request) {
 
 	company, err := h.service.GetCompany(r.Context(), code)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+		if shared.IsNotFound(err) {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -86,6 +97,14 @@ func (h *CompanyHandler) AddRole(w http.ResponseWriter, r *http.Request) {
 
 	err := h.service.AddRole(r.Context(), code, req.RoleName, req.HourlyRate)
 	if err != nil {
+		if shared.IsNotFound(err) {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
+		if errors.Is(err, ErrRoleAlreadyExists) {
+			http.Error(w, err.Error(), http.StatusConflict)
+			return
+		}
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -100,6 +119,10 @@ func (h *CompanyHandler) RemoveRole(w http.ResponseWriter, r *http.Request) {
 
 	err := h.service.RemoveRole(r.Context(), code, role)
 	if err != nil {
+		if shared.IsNotFound(err) || errors.Is(err, ErrRoleNotFound) {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}

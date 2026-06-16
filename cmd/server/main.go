@@ -43,7 +43,7 @@ func main() {
 
 	// Initialize services
 	companyService := company.NewCompanyService(companyRepo)
-	workerService := worker.NewWorkerService(workerRepo)
+	workerService := worker.NewWorkerService(workerRepo, companyService)
 	activityWebhookService := activity.NewWebhookService(activityRepo, workerService, companyService)
 	activitySessionService := activity.NewSessionService(activityRepo, companyService)
 	dashboardService := dashboard.NewDashboardService(dashboardRepo)
@@ -51,7 +51,7 @@ func main() {
 	// Initialize handlers
 	companyHandler := company.NewCompanyHandler(companyService)
 	workerHandler := worker.NewWorkerHandler(workerService)
-	activityHandler := activity.NewActivityHandler(activityWebhookService, activitySessionService)
+	activityHandler := activity.NewActivityHandler(activityWebhookService, activitySessionService, cfg.WebhookSecret)
 	dashboardAPIHandler := dashboard.NewDashboardAPIHandler(dashboardService)
 
 	dashboardWebHandler, err := dashboard.NewDashboardWebHandler(dashboardService, "./templates")

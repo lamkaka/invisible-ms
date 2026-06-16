@@ -73,21 +73,6 @@ func (s *WebhookService) ProcessWebhook(ctx context.Context, payload WebhookPayl
 		return nil, ErrRoleNotAssigned
 	}
 
-	// Validate action
-	if actionType == ActionCheckOut {
-		// Check if worker has an active check-in
-		latestCheckIn, err := s.activityRepo.GetLatestByWorkerAndRole(ctx, workerEntity.WorkerID, role, ActionCheckIn)
-		if err != nil {
-			return nil, ErrNoActiveCheckIn
-		}
-
-		// Check if there's a check-out after the check-in
-		latestCheckOut, err := s.activityRepo.GetLatestByWorkerAndRole(ctx, workerEntity.WorkerID, role, ActionCheckOut)
-		if err == nil && latestCheckOut.Timestamp.After(latestCheckIn.Timestamp) {
-			return nil, ErrNoActiveCheckIn
-		}
-	}
-
 	// Create activity log
 	logID := uuid.New().String()
 	log, err := NewActivityLog(logID, workerEntity.WorkerID, payload.CompanyCode, role, actionType, time.Now())
@@ -95,7 +80,12 @@ func (s *WebhookService) ProcessWebhook(ctx context.Context, payload WebhookPayl
 		return nil, err
 	}
 
-	err = s.activityRepo.Create(ctx, log)
+	// Atomically validate and persist based on action type
+	if actionType == ActionCheckOut {
+		err = s.activityRepo.CheckOutWithValidation(ctx, log)
+	} else {
+		err = s.activityRepo.Create(ctx, log)
+	}
 	if err != nil {
 		return nil, err
 	}

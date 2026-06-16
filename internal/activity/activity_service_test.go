@@ -22,6 +22,34 @@ func (m *MockActivityRepository) Create(ctx context.Context, log *ActivityLog) e
 	return nil
 }
 
+func (m *MockActivityRepository) CheckOutWithValidation(ctx context.Context, log *ActivityLog) error {
+	// Simulate the transactional check-out logic in-memory
+	var latestCheckIn *ActivityLog
+	var latestCheckOut *ActivityLog
+	for _, l := range m.logs {
+		if l.WorkerID == log.WorkerID && l.Role == log.Role {
+			if l.ActionType == ActionCheckIn {
+				if latestCheckIn == nil || l.Timestamp.After(latestCheckIn.Timestamp) {
+					latestCheckIn = l
+				}
+			}
+			if l.ActionType == ActionCheckOut {
+				if latestCheckOut == nil || l.Timestamp.After(latestCheckOut.Timestamp) {
+					latestCheckOut = l
+				}
+			}
+		}
+	}
+	if latestCheckIn == nil {
+		return ErrNoActiveCheckIn
+	}
+	if latestCheckOut != nil && latestCheckOut.Timestamp.After(latestCheckIn.Timestamp) {
+		return ErrNoActiveCheckIn
+	}
+	m.logs = append(m.logs, log)
+	return nil
+}
+
 func (m *MockActivityRepository) GetByWorker(ctx context.Context, workerID string, from, to time.Time) ([]*ActivityLog, error) {
 	var result []*ActivityLog
 	for _, l := range m.logs {

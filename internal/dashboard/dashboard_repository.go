@@ -109,40 +109,41 @@ func (r *SpannerDashboardRepository) GetTotalHoursToday(ctx context.Context, com
 	today := time.Now().Truncate(24 * time.Hour)
 
 	stmt := spanner.Statement{
-		SQL: `SELECT log_id, worker_id, company_code, role, action_type, timestamp 
-		      FROM activity_logs 
-		      WHERE company_code = @company 
-		        AND timestamp >= @today
-		        AND action_type IN ('CHECK_IN', 'CHECK_OUT')
-		      ORDER BY timestamp ASC`,
+		SQL: `SELECT COALESCE(SUM(TIMESTAMP_DIFF(checkout_ts, checkin_ts, SECOND)) / 3600.0, 0)
+		      FROM (
+		        SELECT 
+		          checkin.timestamp as checkin_ts,
+		          (
+		            SELECT MIN(co.timestamp) 
+		            FROM activity_logs co 
+		            WHERE co.worker_id = checkin.worker_id 
+		              AND co.role = checkin.role 
+		              AND co.action_type = 'CHECK_OUT'
+		              AND co.timestamp > checkin.timestamp
+		          ) as checkout_ts
+		        FROM activity_logs checkin
+		        WHERE checkin.company_code = @company
+		          AND checkin.action_type = 'CHECK_IN'
+		          AND checkin.timestamp >= @today
+		      )
+		      WHERE checkout_ts IS NOT NULL`,
 		Params: map[string]interface{}{
 			"company": companyCode,
 			"today":   today,
 		},
 	}
 
-	logs, err := r.queryActivityLogs(ctx, stmt)
+	iter := r.client.Single().Query(ctx, stmt)
+	defer iter.Stop()
+
+	row, err := iter.Next()
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("failed to query total hours: %w", err)
 	}
 
-	type sessionKey struct {
-		WorkerID string
-		Role     string
-	}
-	checkIns := make(map[sessionKey]time.Time)
 	var totalHours float64
-
-	for _, log := range logs {
-		key := sessionKey{WorkerID: log.WorkerID, Role: log.Role}
-		if log.ActionType == string(activityActionCheckIn) {
-			checkIns[key] = log.Timestamp
-		} else if log.ActionType == string(activityActionCheckOut) {
-			if checkInTime, exists := checkIns[key]; exists {
-				totalHours += log.Timestamp.Sub(checkInTime).Hours()
-				delete(checkIns, key)
-			}
-		}
+	if err := row.Columns(&totalHours); err != nil {
+		return 0, fmt.Errorf("failed to parse total hours: %w", err)
 	}
 
 	return totalHours, nil
@@ -210,7 +211,69 @@ func (r *SpannerDashboardRepository) GetCostByRole(ctx context.Context, companyC
 }
 
 func (r *SpannerDashboardRepository) GetWorkerStats(ctx context.Context, companyCode string, from, to time.Time) ([]WorkerStats, error) {
-	return []WorkerStats{}, nil
+	stmt := spanner.Statement{
+		SQL: `SELECT w.worker_id, w.name,
+		             COALESCE(SUM(total_hours), 0) as total_hours,
+		             COALESCE(SUM(total_cost), 0) as total_cost
+		      FROM (
+		        SELECT 
+		          paired.worker_id,
+		          TIMESTAMP_DIFF(checkout_ts, checkin_ts, SECOND) / 3600.0 as total_hours,
+		          TIMESTAMP_DIFF(checkout_ts, checkin_ts, SECOND) / 3600.0 * COALESCE(cr.hourly_rate, 0) as total_cost
+		        FROM (
+		          SELECT 
+		            checkin.worker_id,
+		            checkin.role,
+		            checkin.timestamp as checkin_ts,
+		            (
+		              SELECT MIN(co.timestamp) 
+		              FROM activity_logs co 
+		              WHERE co.worker_id = checkin.worker_id 
+		                AND co.role = checkin.role 
+		                AND co.action_type = 'CHECK_OUT'
+		                AND co.timestamp > checkin.timestamp
+		            ) as checkout_ts
+		          FROM activity_logs checkin
+		          WHERE checkin.company_code = @company
+		            AND checkin.action_type = 'CHECK_IN'
+		            AND checkin.timestamp >= @from
+		            AND checkin.timestamp < @to
+		        ) paired
+		        LEFT JOIN company_roles cr ON cr.company_code = @company AND cr.role_name = paired.role
+		        WHERE checkout_ts IS NOT NULL
+		      ) sessions
+		      JOIN workers w ON sessions.worker_id = w.worker_id
+		      GROUP BY w.worker_id, w.name
+		      ORDER BY total_hours DESC
+		      LIMIT 10`,
+		Params: map[string]interface{}{
+			"company": companyCode,
+			"from":    from,
+			"to":      to,
+		},
+	}
+
+	iter := r.client.Single().Query(ctx, stmt)
+	defer iter.Stop()
+
+	var stats []WorkerStats
+	for {
+		row, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return nil, fmt.Errorf("failed to query worker stats: %w", err)
+		}
+
+		var ws WorkerStats
+		if err := row.Columns(&ws.WorkerID, &ws.WorkerName, &ws.TotalHours, &ws.TotalCost); err != nil {
+			return nil, fmt.Errorf("failed to parse worker stat row: %w", err)
+		}
+		stats = append(stats, ws)
+	}
+
+	return stats, nil
 }
 
 // activityActionType constants mirror activity.ActionType to avoid cross-package dependency

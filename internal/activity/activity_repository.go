@@ -16,6 +16,7 @@ type ActivityRepository interface {
 	GetByWorker(ctx context.Context, workerID string, from, to time.Time) ([]*ActivityLog, error)
 	GetByCompany(ctx context.Context, companyCode string, from, to time.Time) ([]*ActivityLog, error)
 	GetLatestByWorkerAndRole(ctx context.Context, workerID, role string, actionType ActionType) (*ActivityLog, error)
+	CheckOutWithValidation(ctx context.Context, log *ActivityLog) error
 }
 
 type SpannerActivityRepository struct {
@@ -38,6 +39,77 @@ func (r *SpannerActivityRepository) Create(ctx context.Context, log *ActivityLog
 	}
 
 	return nil
+}
+
+func (r *SpannerActivityRepository) CheckOutWithValidation(ctx context.Context, log *ActivityLog) error {
+	_, err := r.client.ReadWriteTransaction(ctx, func(txnCtx context.Context, txn *spanner.ReadWriteTransaction) error {
+		// Query latest CHECK_IN within the transaction
+		checkInStmt := spanner.Statement{
+			SQL: `SELECT log_id, worker_id, company_code, role, action_type, timestamp 
+			      FROM activity_logs 
+			      WHERE worker_id = @worker AND role = @role AND action_type = @action
+			      ORDER BY timestamp DESC
+			      LIMIT 1`,
+			Params: map[string]interface{}{
+				"worker": log.WorkerID,
+				"role":   log.Role,
+				"action": string(ActionCheckIn),
+			},
+		}
+		checkInIter := txn.Query(txnCtx, checkInStmt)
+		defer checkInIter.Stop()
+
+		checkInRow, err := checkInIter.Next()
+		if err == iterator.Done {
+			return ErrNoActiveCheckIn
+		}
+		if err != nil {
+			return fmt.Errorf("failed to query check-in: %w", err)
+		}
+
+		latestCheckIn, err := r.parseLogRow(checkInRow)
+		if err != nil {
+			return err
+		}
+
+		// Query latest CHECK_OUT within the transaction
+		checkOutStmt := spanner.Statement{
+			SQL: `SELECT log_id, worker_id, company_code, role, action_type, timestamp 
+			      FROM activity_logs 
+			      WHERE worker_id = @worker AND role = @role AND action_type = @action
+			      ORDER BY timestamp DESC
+			      LIMIT 1`,
+			Params: map[string]interface{}{
+				"worker": log.WorkerID,
+				"role":   log.Role,
+				"action": string(ActionCheckOut),
+			},
+		}
+		checkOutIter := txn.Query(txnCtx, checkOutStmt)
+		defer checkOutIter.Stop()
+
+		checkOutRow, err := checkOutIter.Next()
+		if err == nil {
+			latestCheckOut, parseErr := r.parseLogRow(checkOutRow)
+			if parseErr != nil {
+				return parseErr
+			}
+			if latestCheckOut.Timestamp.After(latestCheckIn.Timestamp) {
+				return ErrNoActiveCheckIn
+			}
+		} else if err != iterator.Done {
+			return fmt.Errorf("failed to query check-out: %w", err)
+		}
+
+		// Insert the CHECK_OUT log atomically
+		m := spanner.Insert("activity_logs",
+			[]string{"log_id", "worker_id", "company_code", "role", "action_type", "timestamp"},
+			[]interface{}{log.LogID, log.WorkerID, log.CompanyCode, log.Role, string(log.ActionType), log.Timestamp},
+		)
+		return txn.BufferWrite([]*spanner.Mutation{m})
+	})
+
+	return err
 }
 
 func (r *SpannerActivityRepository) GetByWorker(ctx context.Context, workerID string, from, to time.Time) ([]*ActivityLog, error) {

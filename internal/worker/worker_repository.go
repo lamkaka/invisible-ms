@@ -30,29 +30,34 @@ func NewSpannerWorkerRepository(client *spanner.Client) *SpannerWorkerRepository
 }
 
 func (r *SpannerWorkerRepository) Create(ctx context.Context, worker *Worker) error {
-	m := spanner.Insert("workers",
-		[]string{"worker_id", "company_code", "phone_number", "name", "is_active"},
-		[]interface{}{worker.WorkerID, worker.CompanyCode, worker.PhoneNumber, worker.Name, worker.IsActive},
-	)
+	_, err := r.client.ReadWriteTransaction(ctx, func(txnCtx context.Context, txn *spanner.ReadWriteTransaction) error {
+		// Insert worker
+		m := spanner.Insert("workers",
+			[]string{"worker_id", "company_code", "phone_number", "name", "is_active"},
+			[]interface{}{worker.WorkerID, worker.CompanyCode, worker.PhoneNumber, worker.Name, worker.IsActive},
+		)
+		if err := txn.BufferWrite([]*spanner.Mutation{m}); err != nil {
+			return err
+		}
 
-	_, err := r.client.Apply(ctx, []*spanner.Mutation{m})
+		// Insert roles
+		for _, role := range worker.AssignedRoles {
+			roleM := spanner.Insert("worker_roles",
+				[]string{"worker_id", "role_name", "company_code"},
+				[]interface{}{worker.WorkerID, role, worker.CompanyCode},
+			)
+			if err := txn.BufferWrite([]*spanner.Mutation{roleM}); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
 	if err != nil {
 		if status.Code(err) == codes.AlreadyExists {
 			return fmt.Errorf("%w: worker %s", shared.ErrAlreadyExists, worker.WorkerID)
 		}
 		return fmt.Errorf("failed to create worker: %w", err)
-	}
-
-	// Insert roles
-	for _, role := range worker.AssignedRoles {
-		roleM := spanner.Insert("worker_roles",
-			[]string{"worker_id", "role_name", "company_code"},
-			[]interface{}{worker.WorkerID, role, worker.CompanyCode},
-		)
-		_, err := r.client.Apply(ctx, []*spanner.Mutation{roleM})
-		if err != nil {
-			return fmt.Errorf("failed to create role: %w", err)
-		}
 	}
 
 	return nil
@@ -178,12 +183,39 @@ func (r *SpannerWorkerRepository) List(ctx context.Context, companyCode string) 
 }
 
 func (r *SpannerWorkerRepository) Update(ctx context.Context, worker *Worker) error {
-	m := spanner.Update("workers",
-		[]string{"worker_id", "company_code", "phone_number", "name", "is_active"},
-		[]interface{}{worker.WorkerID, worker.CompanyCode, worker.PhoneNumber, worker.Name, worker.IsActive},
-	)
+	_, err := r.client.ReadWriteTransaction(ctx, func(txnCtx context.Context, txn *spanner.ReadWriteTransaction) error {
+		// Delete existing roles
+		delStmt := spanner.Statement{
+			SQL:    "DELETE FROM worker_roles WHERE worker_id = @id",
+			Params: map[string]interface{}{"id": worker.WorkerID},
+		}
+		_, err := txn.Update(txnCtx, delStmt)
+		if err != nil {
+			return err
+		}
 
-	_, err := r.client.Apply(ctx, []*spanner.Mutation{m})
+		// Update worker row
+		m := spanner.Update("workers",
+			[]string{"worker_id", "company_code", "phone_number", "name", "is_active"},
+			[]interface{}{worker.WorkerID, worker.CompanyCode, worker.PhoneNumber, worker.Name, worker.IsActive},
+		)
+		if err := txn.BufferWrite([]*spanner.Mutation{m}); err != nil {
+			return err
+		}
+
+		// Insert current roles
+		for _, role := range worker.AssignedRoles {
+			roleM := spanner.Insert("worker_roles",
+				[]string{"worker_id", "role_name", "company_code"},
+				[]interface{}{worker.WorkerID, role, worker.CompanyCode},
+			)
+			if err := txn.BufferWrite([]*spanner.Mutation{roleM}); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
 	if err != nil {
 		return fmt.Errorf("failed to update worker: %w", err)
 	}

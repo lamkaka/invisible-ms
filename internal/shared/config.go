@@ -14,6 +14,7 @@ type Config struct {
 	SpannerInstanceID string
 	SpannerDatabaseID string
 	Port              int
+	WebhookSecret     string
 }
 
 func LoadConfig() (*Config, error) {
@@ -27,6 +28,7 @@ func LoadConfig() (*Config, error) {
 		SpannerInstanceID: getEnv("SPANNER_INSTANCE_ID", ""),
 		SpannerDatabaseID: getEnv("SPANNER_DATABASE_ID", ""),
 		Port:              port,
+		WebhookSecret:     getEnv("WEBHOOK_SECRET", ""),
 	}, nil
 }
 

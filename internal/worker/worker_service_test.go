@@ -3,6 +3,8 @@ package worker
 import (
 	"context"
 	"testing"
+
+	"github.com/scalica/ims/internal/company"
 )
 
 type MockWorkerRepository struct {
@@ -55,9 +57,64 @@ func (m *MockWorkerRepository) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
+type MockCompanyRepository struct {
+	companies map[string]*company.Company
+}
+
+func NewMockCompanyRepository() *MockCompanyRepository {
+	return &MockCompanyRepository{companies: make(map[string]*company.Company)}
+}
+
+func (m *MockCompanyRepository) Create(ctx context.Context, c *company.Company) error {
+	m.companies[c.CompanyCode] = c
+	return nil
+}
+
+func (m *MockCompanyRepository) GetByCode(ctx context.Context, code string) (*company.Company, error) {
+	c, exists := m.companies[code]
+	if !exists {
+		return nil, company.ErrCompanyNotFound
+	}
+	return c, nil
+}
+
+func (m *MockCompanyRepository) List(ctx context.Context) ([]*company.Company, error) {
+	var companies []*company.Company
+	for _, c := range m.companies {
+		companies = append(companies, c)
+	}
+	return companies, nil
+}
+
+func (m *MockCompanyRepository) Update(ctx context.Context, c *company.Company) error {
+	m.companies[c.CompanyCode] = c
+	return nil
+}
+
+func (m *MockCompanyRepository) Delete(ctx context.Context, code string) error {
+	delete(m.companies, code)
+	return nil
+}
+
+func setupTestService() (*WorkerService, *MockWorkerRepository, *MockCompanyRepository) {
+	workerRepo := NewMockWorkerRepository()
+	companyRepo := NewMockCompanyRepository()
+	companyService := company.NewCompanyService(companyRepo)
+	service := NewWorkerService(workerRepo, companyService)
+	return service, workerRepo, companyRepo
+}
+
+func addCompanyWithRoles(companyRepo *MockCompanyRepository, code string, roles map[string]float64) {
+	c, _ := company.NewCompany(code, code+" Corp")
+	for name, rate := range roles {
+		c.AddRole(name, rate)
+	}
+	companyRepo.companies[code] = c
+}
+
 func TestWorkerService_CreateWorker(t *testing.T) {
-	repo := NewMockWorkerRepository()
-	service := NewWorkerService(repo)
+	service, _, companyRepo := setupTestService()
+	addCompanyWithRoles(companyRepo, "ACME", map[string]float64{"CLEANING": 15.0})
 
 	ctx := context.Background()
 	worker, err := service.CreateWorker(ctx, "uuid-1", "+1234567890", "John Doe", "ACME", []string{"CLEANING"})
@@ -74,12 +131,23 @@ func TestWorkerService_CreateWorker(t *testing.T) {
 	}
 }
 
-func TestWorkerService_AssignRole(t *testing.T) {
-	repo := NewMockWorkerRepository()
-	service := NewWorkerService(repo)
+func TestWorkerService_CreateWorker_RoleNotFound(t *testing.T) {
+	service, _, companyRepo := setupTestService()
+	addCompanyWithRoles(companyRepo, "ACME", map[string]float64{"CLEANING": 15.0})
 
 	ctx := context.Background()
-	service.CreateWorker(ctx, "uuid-1", "+1234567890", "John Doe", "ACME", []string{})
+	_, err := service.CreateWorker(ctx, "uuid-1", "+1234567890", "John Doe", "ACME", []string{"NONEXISTENT"})
+	if err == nil {
+		t.Fatal("expected error for non-existent role")
+	}
+}
+
+func TestWorkerService_AssignRole(t *testing.T) {
+	service, _, companyRepo := setupTestService()
+	addCompanyWithRoles(companyRepo, "ACME", map[string]float64{"CLEANING": 15.0, "DELIVERY": 20.0})
+
+	ctx := context.Background()
+	service.CreateWorker(ctx, "uuid-1", "+1234567890", "John Doe", "ACME", []string{"CLEANING"})
 
 	err := service.AssignRole(ctx, "uuid-1", "DELIVERY")
 	if err != nil {
@@ -92,9 +160,22 @@ func TestWorkerService_AssignRole(t *testing.T) {
 	}
 }
 
+func TestWorkerService_AssignRole_RoleNotFound(t *testing.T) {
+	service, _, companyRepo := setupTestService()
+	addCompanyWithRoles(companyRepo, "ACME", map[string]float64{"CLEANING": 15.0})
+
+	ctx := context.Background()
+	service.CreateWorker(ctx, "uuid-1", "+1234567890", "John Doe", "ACME", []string{})
+
+	err := service.AssignRole(ctx, "uuid-1", "NONEXISTENT")
+	if err == nil {
+		t.Fatal("expected error for non-existent role")
+	}
+}
+
 func TestWorkerService_DeactivateWorker(t *testing.T) {
-	repo := NewMockWorkerRepository()
-	service := NewWorkerService(repo)
+	service, _, companyRepo := setupTestService()
+	addCompanyWithRoles(companyRepo, "ACME", map[string]float64{"CLEANING": 15.0})
 
 	ctx := context.Background()
 	service.CreateWorker(ctx, "uuid-1", "+1234567890", "John Doe", "ACME", []string{})
