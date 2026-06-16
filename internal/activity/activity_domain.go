@@ -1,10 +1,11 @@
 package activity
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/lamkaka/invisible-ms/internal/shared"
 )
 
 // Well-known system action type constants — stable identifiers stored in activity_logs.
@@ -15,12 +16,13 @@ const (
 )
 
 var (
-	ErrInvalidStaffID = errors.New("staff ID cannot be empty")
-	ErrInvalidCompany = errors.New("company code cannot be empty")
-	ErrInvalidRole    = errors.New("role cannot be empty")
-	ErrInvalidMessage = errors.New("invalid message format")
-	ErrUnknownAction  = errors.New("unknown action")
-	ErrRoleRequired   = errors.New("role must be specified when staff has multiple roles")
+	ErrInvalidStaffID = fmt.Errorf("staff ID cannot be empty: %w", shared.ErrInvalidInput)
+	ErrInvalidCompany = fmt.Errorf("company code cannot be empty: %w", shared.ErrInvalidInput)
+	ErrInvalidRole    = fmt.Errorf("role cannot be empty: %w", shared.ErrInvalidInput)
+	ErrInvalidMessage = fmt.Errorf("invalid message format: %w", shared.ErrInvalidInput)
+	ErrExtraWords     = fmt.Errorf("message contains too many words: %w", shared.ErrInvalidInput)
+	ErrUnknownAction  = fmt.Errorf("unknown action: %w", shared.ErrInvalidInput)
+	ErrRoleRequired   = fmt.Errorf("role must be specified when staff has multiple roles: %w", shared.ErrInvalidInput)
 )
 
 type ActivityLog struct {
@@ -62,6 +64,9 @@ func ParseMessage(message string, numWorkerRoles int, keywordMap map[string]stri
 	parts := strings.Fields(strings.ToUpper(message))
 	if len(parts) == 0 {
 		return "", "", ErrInvalidMessage
+	}
+	if len(parts) > 2 {
+		return "", "", ErrExtraWords
 	}
 
 	actionType, ok := keywordMap[parts[0]]

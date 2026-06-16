@@ -118,68 +118,103 @@ func (r *SpannerStaffRepository) GetByID(ctx context.Context, id string) (*Staff
 	return staff, nil
 }
 
-func (r *SpannerStaffRepository) GetByPhoneAndCompany(ctx context.Context, phone, companyCode string) (*Staff, error) {
-	stmt := spanner.Statement{
-		SQL: "SELECT staff_id FROM staff WHERE phone_number = @phone AND company_code = @company",
-		Params: map[string]interface{}{
-			"phone":   phone,
-			"company": companyCode,
-		},
-	}
-
+// queryStaff executes the given statement (which must select staff_id, company_code, phone_number,
+// name, is_active from the staff table) and loads all roles in a second query using IN UNNEST.
+// This is the 2-query pattern that avoids N+1 lookups.
+func (r *SpannerStaffRepository) queryStaff(ctx context.Context, stmt spanner.Statement) ([]*Staff, error) {
 	iter := r.client.Single().Query(ctx, stmt)
 	defer iter.Stop()
 
-	row, err := iter.Next()
-	if err == iterator.Done {
-		return nil, fmt.Errorf("%w: staff with phone %s", shared.ErrNotFound, phone)
-	}
-	if err != nil {
-		return nil, fmt.Errorf("failed to query staff: %w", err)
-	}
-
-	var staffID string
-	if err := row.Columns(&staffID); err != nil {
-		return nil, fmt.Errorf("failed to parse staff ID: %w", err)
-	}
-
-	return r.GetByID(ctx, staffID)
-}
-
-func (r *SpannerStaffRepository) List(ctx context.Context, companyCode string) ([]*Staff, error) {
-	var staff []*Staff
-
-	stmt := spanner.Statement{
-		SQL:    "SELECT staff_id FROM staff WHERE company_code = @company",
-		Params: map[string]interface{}{"company": companyCode},
-	}
-
-	iter := r.client.Single().Query(ctx, stmt)
-	defer iter.Stop()
-
+	staffByID := make(map[string]*Staff)
+	var ids []string
 	for {
 		row, err := iter.Next()
 		if err == iterator.Done {
 			break
 		}
 		if err != nil {
-			return nil, fmt.Errorf("failed to read staff: %w", err)
+			return nil, fmt.Errorf("failed to query staff: %w", err)
 		}
 
-		var staffID string
-		if err := row.Columns(&staffID); err != nil {
-			return nil, fmt.Errorf("failed to parse staff ID: %w", err)
+		var staffID, companyCode, phone, name string
+		var isActive bool
+		if err := row.Columns(&staffID, &companyCode, &phone, &name, &isActive); err != nil {
+			return nil, fmt.Errorf("failed to parse staff row: %w", err)
 		}
 
-		s, err := r.GetByID(ctx, staffID)
-		if err != nil {
-			return nil, err
+		staffByID[staffID] = &Staff{
+			StaffID:       staffID,
+			CompanyCode:   companyCode,
+			PhoneNumber:   phone,
+			Name:          name,
+			IsActive:      isActive,
+			AssignedRoles: []string{},
 		}
-
-		staff = append(staff, s)
+		ids = append(ids, staffID)
 	}
 
-	return staff, nil
+	// Fetch all roles in a single query
+	if len(ids) > 0 {
+		roleStmt := spanner.Statement{
+			SQL:    "SELECT staff_id, role_name FROM staff_roles WHERE staff_id IN UNNEST(@ids)",
+			Params: map[string]interface{}{"ids": ids},
+		}
+		roleIter := r.client.Single().Query(ctx, roleStmt)
+		defer roleIter.Stop()
+
+		for {
+			row, err := roleIter.Next()
+			if err == iterator.Done {
+				break
+			}
+			if err != nil {
+				return nil, fmt.Errorf("failed to query roles: %w", err)
+			}
+
+			var staffID, roleName string
+			if err := row.Columns(&staffID, &roleName); err != nil {
+				return nil, fmt.Errorf("failed to parse role row: %w", err)
+			}
+
+			if s, ok := staffByID[staffID]; ok {
+				s.AssignedRoles = append(s.AssignedRoles, roleName)
+			}
+		}
+	}
+
+	// Return in insertion order
+	result := make([]*Staff, 0, len(ids))
+	for _, id := range ids {
+		result = append(result, staffByID[id])
+	}
+	return result, nil
+}
+
+func (r *SpannerStaffRepository) GetByPhoneAndCompany(ctx context.Context, phone, companyCode string) (*Staff, error) {
+	stmt := spanner.Statement{
+		SQL: "SELECT staff_id, company_code, phone_number, name, is_active FROM staff WHERE phone_number = @phone AND company_code = @company",
+		Params: map[string]interface{}{
+			"phone":   phone,
+			"company": companyCode,
+		},
+	}
+
+	results, err := r.queryStaff(ctx, stmt)
+	if err != nil {
+		return nil, err
+	}
+	if len(results) == 0 {
+		return nil, fmt.Errorf("%w: staff with phone %s in company %s", shared.ErrNotFound, phone, companyCode)
+	}
+	return results[0], nil
+}
+
+func (r *SpannerStaffRepository) List(ctx context.Context, companyCode string) ([]*Staff, error) {
+	stmt := spanner.Statement{
+		SQL:    "SELECT staff_id, company_code, phone_number, name, is_active FROM staff WHERE company_code = @company",
+		Params: map[string]interface{}{"company": companyCode},
+	}
+	return r.queryStaff(ctx, stmt)
 }
 
 func (r *SpannerStaffRepository) Update(ctx context.Context, staff *Staff) error {

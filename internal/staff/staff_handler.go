@@ -28,6 +28,10 @@ func (h *StaffHandler) RegisterRoutes(router *mux.Router) {
 
 func (h *StaffHandler) ListStaff(w http.ResponseWriter, r *http.Request) {
 	companyCode := r.URL.Query().Get("company_code")
+	if companyCode == "" {
+		http.Error(w, "company_code is required", http.StatusBadRequest)
+		return
+	}
 
 	staff, err := h.service.ListStaff(r.Context(), companyCode)
 	if err != nil {

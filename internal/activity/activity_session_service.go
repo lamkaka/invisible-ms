@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/lamkaka/invisible-ms/internal/company"
+	"github.com/lamkaka/invisible-ms/internal/shared"
 )
 
 type Session struct {
@@ -46,6 +47,16 @@ func (s *SessionService) GetSessions(ctx context.Context, companyCode string, fr
 		return nil, err
 	}
 
+	// Fetch company once for role hourly rates (avoids N+1 inside loop)
+	companyEntity, err := s.companyService.GetCompany(ctx, companyCode)
+	if err != nil {
+		return nil, err
+	}
+	roleRateMap := make(map[string]float64, len(companyEntity.Roles))
+	for name, role := range companyEntity.Roles {
+		roleRateMap[name] = role.HourlyRate
+	}
+
 	// Group logs by staff + role
 	type sessionKey struct {
 		StaffID string
@@ -64,18 +75,12 @@ func (s *SessionService) GetSessions(ctx context.Context, companyCode string, fr
 			if checkInTime, exists := checkIns[key]; exists {
 				duration := CalculateSessionDuration(checkInTime, log.Timestamp)
 
-				// Get hourly rate
-				companyEntity, err := s.companyService.GetCompany(ctx, log.CompanyCode)
-				if err != nil {
-					return nil, err
+				hourlyRate, ok := roleRateMap[log.Role]
+				if !ok {
+					return nil, fmt.Errorf("%w: role %s not found in company %s", shared.ErrNotFound, log.Role, companyCode)
 				}
 
-				role, err := companyEntity.GetRole(log.Role)
-				if err != nil {
-					return nil, err
-				}
-
-				cost := CalculateSessionCost(duration, role.HourlyRate)
+				cost := CalculateSessionCost(duration, hourlyRate)
 
 				sessions = append(sessions, &Session{
 					StaffID:     log.StaffID,

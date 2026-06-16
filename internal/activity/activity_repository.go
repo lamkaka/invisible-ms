@@ -117,7 +117,7 @@ func (r *SpannerActivityRepository) GetByWorker(ctx context.Context, staffID str
 		SQL: `SELECT log_id, staff_id, company_code, role, action_type, timestamp 
 		      FROM activity_logs 
 		      WHERE staff_id = @staff AND timestamp BETWEEN @from AND @to
-		      ORDER BY timestamp DESC`,
+		      ORDER BY timestamp ASC`,
 		Params: map[string]interface{}{
 			"staff": staffID,
 			"from":  from,
@@ -133,7 +133,7 @@ func (r *SpannerActivityRepository) GetByCompany(ctx context.Context, companyCod
 		SQL: `SELECT log_id, staff_id, company_code, role, action_type, timestamp 
 		      FROM activity_logs 
 		      WHERE company_code = @company AND timestamp BETWEEN @from AND @to
-		      ORDER BY timestamp DESC`,
+		      ORDER BY timestamp ASC`,
 		Params: map[string]interface{}{
 			"company": companyCode,
 			"from":    from,

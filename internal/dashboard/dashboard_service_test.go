@@ -48,6 +48,14 @@ func (m *MockDashboardRepository) GetActionTypeBreakdown(ctx context.Context, co
 	return []ActionTypeCount{}, nil
 }
 
+func (m *MockDashboardRepository) GetAverageHours(ctx context.Context, companyCode string, from, to time.Time) (float64, error) {
+	return 0, nil
+}
+
+func (m *MockDashboardRepository) GetOvertimeAlerts(ctx context.Context, companyCode string, thresholdHours float64, from, to time.Time) ([]OvertimeAlert, error) {
+	return []OvertimeAlert{}, nil
+}
+
 func TestDashboardService_GetStats(t *testing.T) {
 	repo := NewMockDashboardRepository()
 	repo.currentlyWorking = []ActiveStaff{

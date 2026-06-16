@@ -10,25 +10,27 @@ import (
 )
 
 type Config struct {
-	SpannerProjectID  string
-	SpannerInstanceID string
-	SpannerDatabaseID string
-	Port              int
-	WebhookSecret     string
+	SpannerProjectID   string
+	SpannerInstanceID  string
+	SpannerDatabaseID  string
+	Port               int
+	WebhookSecret      string
+	CORSAllowedOrigins string
 }
 
 func LoadConfig() (*Config, error) {
-	port, err := strconv.Atoi(getEnv("PORT", "8080"))
+	port, err := strconv.Atoi(GetEnv("PORT", "8080"))
 	if err != nil {
 		return nil, fmt.Errorf("invalid PORT: %w", err)
 	}
 
 	return &Config{
-		SpannerProjectID:  getEnv("SPANNER_PROJECT_ID", ""),
-		SpannerInstanceID: getEnv("SPANNER_INSTANCE_ID", ""),
-		SpannerDatabaseID: getEnv("SPANNER_DATABASE_ID", ""),
-		Port:              port,
-		WebhookSecret:     getEnv("WEBHOOK_SECRET", ""),
+		SpannerProjectID:   GetEnv("SPANNER_PROJECT_ID", ""),
+		SpannerInstanceID:  GetEnv("SPANNER_INSTANCE_ID", ""),
+		SpannerDatabaseID:  GetEnv("SPANNER_DATABASE_ID", ""),
+		Port:               port,
+		WebhookSecret:      GetEnv("WEBHOOK_SECRET", ""),
+		CORSAllowedOrigins: GetEnv("CORS_ALLOWED_ORIGINS", "*"),
 	}, nil
 }
 
@@ -45,7 +47,7 @@ func NewSpannerClient(ctx context.Context, cfg *Config) (*spanner.Client, error)
 	return client, nil
 }
 
-func getEnv(key, defaultValue string) string {
+func GetEnv(key, defaultValue string) string {
 	if value := os.Getenv(key); value != "" {
 		return value
 	}

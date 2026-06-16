@@ -63,7 +63,7 @@ func main() {
 	// Setup router
 	router := mux.NewRouter()
 	router.Use(shared.LoggingMiddleware)
-	router.Use(shared.CORSMiddleware)
+	router.Use(shared.CORSMiddleware(cfg.CORSAllowedOrigins))
 
 	// Register routes
 	companyHandler.RegisterRoutes(router)

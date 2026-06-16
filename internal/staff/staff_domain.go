@@ -83,7 +83,3 @@ func (w *Staff) Deactivate() {
 func (w *Staff) Activate() {
 	w.IsActive = true
 }
-
-func (w *Staff) CanCheckIn() bool {
-	return w.IsActive && len(w.AssignedRoles) > 0
-}

@@ -69,6 +69,7 @@ func TestParseMessage(t *testing.T) {
 		{"custom keyword CLOCK_IN", "CLOCK_IN", 1, customKeywordMap, ActionCheckIn, "", false},
 		{"custom keyword CLOCK_OUT with role", "CLOCK_OUT CLEANING", 2, customKeywordMap, ActionCheckOut, "CLEANING", false},
 		{"custom keyword BREAK", "BREAK", 1, customKeywordMap, "BREAK_START", "", false},
+		{"too many words", "IN CLEANING EXTRA", 2, defaultKeywordMap(), "", "", true},
 		{"unknown keyword", "UNKNOWN", 1, defaultKeywordMap(), "", "", true},
 	}
 

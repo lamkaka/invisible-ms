@@ -11,11 +11,13 @@ import (
 	"strings"
 	"time"
 
+	"cloud.google.com/go/spanner"
 	database "cloud.google.com/go/spanner/admin/database/apiv1"
 	adminpb "cloud.google.com/go/spanner/admin/database/apiv1/databasepb"
 	instance "cloud.google.com/go/spanner/admin/instance/apiv1"
 	instancepb "cloud.google.com/go/spanner/admin/instance/apiv1/instancepb"
-	"cloud.google.com/go/spanner"
+
+	"github.com/lamkaka/invisible-ms/internal/shared"
 )
 
 func main() {
@@ -282,7 +284,7 @@ func readMigrations(dir string) ([]string, []string, error) {
 			return nil, nil, fmt.Errorf("failed to read %s: %w", filePath, err)
 		}
 
-		statements := splitSQLStatements(string(content))
+		statements := shared.SplitSQLStatements(string(content))
 
 		var fileDDL, fileDML int
 		for _, stmt := range statements {
@@ -300,47 +302,6 @@ func readMigrations(dir string) ([]string, []string, error) {
 	}
 
 	return allDDL, allDML, nil
-}
-
-// splitSQLStatements splits SQL content by semicolons, respecting string literals.
-func splitSQLStatements(content string) []string {
-	var statements []string
-	var current strings.Builder
-	inString := false
-	var stringChar byte
-
-	for i := 0; i < len(content); i++ {
-		c := content[i]
-
-		// Handle string literals (single or double quotes)
-		if (c == '\'' || c == '"') && (i == 0 || content[i-1] != '\\') {
-			if !inString {
-				inString = true
-				stringChar = c
-			} else if c == stringChar {
-				inString = false
-			}
-		}
-
-		// Skip semicolons inside string literals
-		if c == ';' && !inString {
-			stmt := strings.TrimSpace(current.String())
-			if stmt != "" {
-				statements = append(statements, stmt)
-			}
-			current.Reset()
-		} else {
-			current.WriteByte(c)
-		}
-	}
-
-	// Catch any remaining statement without trailing semicolon
-	stmt := strings.TrimSpace(current.String())
-	if stmt != "" {
-		statements = append(statements, stmt)
-	}
-
-	return statements
 }
 
 func truncate(s string, maxLen int) string {

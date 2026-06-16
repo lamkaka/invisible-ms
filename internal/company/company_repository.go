@@ -130,12 +130,13 @@ func (r *SpannerCompanyRepository) GetByCode(ctx context.Context, code string) (
 }
 
 func (r *SpannerCompanyRepository) List(ctx context.Context) ([]*Company, error) {
-	var companies []*Company
-
+	// Fetch all companies
 	stmt := spanner.Statement{SQL: "SELECT company_code, company_name FROM companies"}
 	iter := r.client.Single().Query(ctx, stmt)
 	defer iter.Stop()
 
+	companiesByCode := make(map[string]*Company)
+	var codes []string
 	for {
 		row, err := iter.Next()
 		if err == iterator.Done {
@@ -150,12 +151,48 @@ func (r *SpannerCompanyRepository) List(ctx context.Context) ([]*Company, error)
 			return nil, fmt.Errorf("failed to parse company: %w", err)
 		}
 
-		company, err := r.GetByCode(ctx, code)
-		if err != nil {
-			return nil, err
+		companiesByCode[code] = &Company{
+			CompanyCode: code,
+			CompanyName: name,
+			Roles:       make(map[string]*Role),
 		}
+		codes = append(codes, code)
+	}
 
-		companies = append(companies, company)
+	// Fetch all roles in a single query
+	if len(codes) > 0 {
+		roleStmt := spanner.Statement{
+			SQL:    "SELECT company_code, role_name, hourly_rate FROM company_roles WHERE company_code IN UNNEST(@codes)",
+			Params: map[string]interface{}{"codes": codes},
+		}
+		roleIter := r.client.Single().Query(ctx, roleStmt)
+		defer roleIter.Stop()
+
+		for {
+			row, err := roleIter.Next()
+			if err == iterator.Done {
+				break
+			}
+			if err != nil {
+				return nil, fmt.Errorf("failed to read roles: %w", err)
+			}
+
+			var companyCode, roleName string
+			var hourlyRate float64
+			if err := row.Columns(&companyCode, &roleName, &hourlyRate); err != nil {
+				return nil, fmt.Errorf("failed to parse role: %w", err)
+			}
+
+			if company, ok := companiesByCode[companyCode]; ok {
+				company.Roles[roleName] = &Role{Name: roleName, HourlyRate: hourlyRate}
+			}
+		}
+	}
+
+	// Reconstruct ordered result
+	var companies []*Company
+	for _, code := range codes {
+		companies = append(companies, companiesByCode[code])
 	}
 
 	return companies, nil

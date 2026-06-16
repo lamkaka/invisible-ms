@@ -13,11 +13,11 @@ import (
 )
 
 var (
-	ErrStaffNotActive   = errors.New("staff is not active")
-	ErrStaffNotFound    = errors.New("staff not found")
-	ErrRoleNotAssigned  = errors.New("role not assigned to staff")
-	ErrNoActiveCheckIn  = errors.New("no active check-in for this role")
-	ErrAlreadyCheckedIn = errors.New("staff already checked in for this role")
+	ErrStaffNotActive   = fmt.Errorf("staff is not active: %w", shared.ErrInvalidInput)
+	ErrStaffNotFound    = fmt.Errorf("staff not found: %w", shared.ErrNotFound)
+	ErrRoleNotAssigned  = fmt.Errorf("role not assigned to staff: %w", shared.ErrInvalidInput)
+	ErrNoActiveCheckIn  = fmt.Errorf("no active check-in for this role: %w", shared.ErrInvalidInput)
+	ErrAlreadyCheckedIn = fmt.Errorf("staff already checked in for this role: %w", shared.ErrAlreadyExists)
 )
 
 type WebhookService struct {

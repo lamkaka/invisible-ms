@@ -5,21 +5,26 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
+	"sort"
 	"strings"
 
+	"cloud.google.com/go/spanner"
 	database "cloud.google.com/go/spanner/admin/database/apiv1"
 	adminpb "cloud.google.com/go/spanner/admin/database/apiv1/databasepb"
 	instance "cloud.google.com/go/spanner/admin/instance/apiv1"
 	instancepb "cloud.google.com/go/spanner/admin/instance/apiv1/instancepb"
 	"google.golang.org/api/iterator"
+
+	"github.com/lamkaka/invisible-ms/internal/shared"
 )
 
 func main() {
 	ctx := context.Background()
 
-	projectID := getEnv("SPANNER_PROJECT_ID", "ims-project")
-	instanceID := getEnv("SPANNER_INSTANCE_ID", "invisible-ms-instance")
-	databaseID := getEnv("SPANNER_DATABASE_ID", "invisible-ms-db")
+	projectID := shared.GetEnv("SPANNER_PROJECT_ID", "ims-project")
+	instanceID := shared.GetEnv("SPANNER_INSTANCE_ID", "invisible-ms-instance")
+	databaseID := shared.GetEnv("SPANNER_DATABASE_ID", "invisible-ms-db")
 
 	// Create instance admin client
 	instanceAdmin, err := instance.NewInstanceAdminClient(ctx)
@@ -72,30 +77,21 @@ func main() {
 	})
 
 	if err != nil {
-		// Read migration files
-		migrations := []string{
-			"migrations/001_create_companies.sql",
-			"migrations/002_create_staff.sql",
-			"migrations/003_create_activity_logs.sql",
+		// Scan migration files
+		ddlStatements, dmlStatements, err := readMigrations("migrations")
+		if err != nil {
+			log.Fatalf("Failed to read migrations: %v", err)
 		}
 
-		var statements []string
-		for _, file := range migrations {
-			content, err := os.ReadFile(file)
-			if err != nil {
-				log.Fatalf("Failed to read migration file %s: %v", file, err)
-			}
-			// Split by semicolons and filter empty statements
-			stmts := splitSQLStatements(string(content))
-			statements = append(statements, stmts...)
-		}
+		log.Printf("Found %d DDL and %d DML statements across migration files",
+			len(ddlStatements), len(dmlStatements))
 
-		// Create database with migrations
+		// Create database with DDL statements
 		log.Printf("Creating database %s...", databaseID)
 		op, err := dbAdmin.CreateDatabase(ctx, &adminpb.CreateDatabaseRequest{
 			Parent:          instanceName,
 			CreateStatement: fmt.Sprintf("CREATE DATABASE `%s`", databaseID),
-			ExtraStatements: statements,
+			ExtraStatements: ddlStatements,
 		})
 		if err != nil {
 			log.Fatalf("Failed to create database: %v", err)
@@ -104,7 +100,30 @@ func main() {
 		if err != nil {
 			log.Fatalf("Database creation failed: %v", err)
 		}
-		log.Println("Database created successfully with migrations")
+		log.Println("Database created successfully with DDL")
+
+		// Execute DML statements after database is created
+		if len(dmlStatements) > 0 {
+			log.Printf("Executing %d DML statements...", len(dmlStatements))
+			spannerClient, err := spanner.NewClient(ctx, dbName)
+			if err != nil {
+				log.Fatalf("Failed to create Spanner client for DML: %v", err)
+			}
+			defer spannerClient.Close()
+
+			for _, stmt := range dmlStatements {
+				s := stmt
+				log.Printf("  Executing DML: %s...", truncate(s, 60))
+				_, err := spannerClient.ReadWriteTransaction(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
+					_, err := txn.Update(ctx, spanner.Statement{SQL: s})
+					return err
+				})
+				if err != nil {
+					log.Fatalf("Failed to execute DML '%s': %v", truncate(s, 60), err)
+				}
+			}
+			log.Println("DML statements executed successfully!")
+		}
 	} else {
 		log.Println("Database already exists")
 	}
@@ -126,49 +145,56 @@ func main() {
 	}
 }
 
-func getEnv(key, defaultValue string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
+// readMigrations reads all .sql files from the given directory sorted by name,
+// parses each into DDL and DML statements.
+func readMigrations(dir string) ([]string, []string, error) {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to read migrations directory %s: %w", dir, err)
 	}
-	return defaultValue
+
+	// Filter and sort .sql files
+	var files []string
+	for _, entry := range entries {
+		if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".sql") {
+			files = append(files, entry.Name())
+		}
+	}
+	sort.Strings(files)
+
+	var allDDL []string
+	var allDML []string
+
+	for _, fileName := range files {
+		filePath := filepath.Join(dir, fileName)
+		content, err := os.ReadFile(filePath)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to read %s: %w", filePath, err)
+		}
+
+		statements := shared.SplitSQLStatements(string(content))
+
+		var fileDDL, fileDML int
+		for _, stmt := range statements {
+			upper := strings.ToUpper(stmt)
+			if strings.HasPrefix(upper, "CREATE") || strings.HasPrefix(upper, "ALTER") || strings.HasPrefix(upper, "DROP") {
+				allDDL = append(allDDL, stmt)
+				fileDDL++
+			} else if strings.HasPrefix(upper, "INSERT") || strings.HasPrefix(upper, "UPDATE") || strings.HasPrefix(upper, "DELETE") {
+				allDML = append(allDML, stmt)
+				fileDML++
+			}
+		}
+
+		log.Printf("  %s: %d DDL, %d DML statements", fileName, fileDDL, fileDML)
+	}
+
+	return allDDL, allDML, nil
 }
 
-func splitSQLStatements(content string) []string {
-	var statements []string
-	var current string
-	inString := false
-	stringChar := byte(0)
-
-	for i := 0; i < len(content); i++ {
-		c := content[i]
-
-		// Handle string literals
-		if (c == '\'' || c == '"') && (i == 0 || content[i-1] != '\\') {
-			if !inString {
-				inString = true
-				stringChar = c
-			} else if c == stringChar {
-				inString = false
-			}
-		}
-
-		// Check for semicolon outside of strings
-		if c == ';' && !inString {
-			stmt := strings.TrimSpace(current)
-			if stmt != "" {
-				statements = append(statements, stmt)
-			}
-			current = ""
-		} else {
-			current += string(c)
-		}
+func truncate(s string, maxLen int) string {
+	if len(s) <= maxLen {
+		return s
 	}
-
-	// Add any remaining statement
-	stmt := strings.TrimSpace(current)
-	if stmt != "" {
-		statements = append(statements, stmt)
-	}
-
-	return statements
+	return s[:maxLen] + "..."
 }
