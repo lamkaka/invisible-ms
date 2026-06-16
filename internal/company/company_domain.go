@@ -84,3 +84,64 @@ func (c *Company) HasRole(name string) bool {
 	_, exists := c.Roles[name]
 	return exists
 }
+
+// --- Action Type Configuration ---
+
+var (
+	ErrInvalidActionTypeName        = errors.New("action type name must be uppercase alphanumeric with underscores only")
+	ErrInvalidKeyword               = errors.New("keyword must be non-empty, uppercase alphanumeric with underscores only")
+	ErrActionTypeNotFound           = errors.New("action type not found")
+	ErrActionTypeAlreadyExists      = errors.New("action type already exists")
+	ErrCannotDeleteSystemActionType = errors.New("cannot delete a system action type")
+	ErrKeywordAlreadyExists         = errors.New("keyword already in use by another action type")
+)
+
+// System action type names — stable identifiers stored in activity_logs.
+const (
+	SystemActionCheckIn  = "CHECK_IN"
+	SystemActionCheckOut = "CHECK_OUT"
+)
+
+type CompanyActionType struct {
+	ActionType string `json:"action_type"`
+	Keyword    string `json:"keyword"`
+	IsSystem   bool   `json:"is_system"`
+}
+
+func ValidateActionTypeName(name string) error {
+	if name == "" {
+		return ErrInvalidActionTypeName
+	}
+	for _, c := range name {
+		if !((c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_') {
+			return ErrInvalidActionTypeName
+		}
+	}
+	return nil
+}
+
+func ValidateKeyword(keyword string) error {
+	if keyword == "" {
+		return ErrInvalidKeyword
+	}
+	for _, c := range keyword {
+		if !((c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_') {
+			return ErrInvalidKeyword
+		}
+	}
+	return nil
+}
+
+func NewCompanyActionType(actionType, keyword string, isSystem bool) (*CompanyActionType, error) {
+	if err := ValidateActionTypeName(actionType); err != nil {
+		return nil, err
+	}
+	if err := ValidateKeyword(keyword); err != nil {
+		return nil, err
+	}
+	return &CompanyActionType{
+		ActionType: actionType,
+		Keyword:    keyword,
+		IsSystem:   isSystem,
+	}, nil
+}

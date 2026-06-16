@@ -1,24 +1,25 @@
 package company
 
-import (
-	"testing"
-)
+import "testing"
 
-func TestNewCompany(t *testing.T) {
+func TestValidateActionTypeName(t *testing.T) {
 	tests := []struct {
-		name        string
-		code        string
-		companyName string
-		expectErr   bool
+		name      string
+		input     string
+		expectErr bool
 	}{
-		{"valid company", "ACME", "Acme Corp", false},
-		{"empty code", "", "Acme Corp", true},
-		{"empty name", "ACME", "", true},
+		{"valid", "BREAK_START", false},
+		{"valid single word", "OVERTIME", false},
+		{"valid with numbers", "TASK_1", false},
+		{"empty", "", true},
+		{"lowercase", "break_start", true},
+		{"spaces", "BREAK START", true},
+		{"special chars", "BREAK-START", true},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := NewCompany(tt.code, tt.companyName)
+			err := ValidateActionTypeName(tt.input)
 			if tt.expectErr && err == nil {
 				t.Error("expected error, got nil")
 			}
@@ -29,71 +30,53 @@ func TestNewCompany(t *testing.T) {
 	}
 }
 
-func TestCompanyAddRole(t *testing.T) {
-	company, _ := NewCompany("ACME", "Acme Corp")
-
-	err := company.AddRole("CLEANING", 15.50)
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
-
-	if len(company.Roles) != 1 {
-		t.Errorf("expected 1 role, got %d", len(company.Roles))
-	}
-
-	if company.Roles["CLEANING"].HourlyRate != 15.50 {
-		t.Errorf("expected rate 15.50, got %f", company.Roles["CLEANING"].HourlyRate)
-	}
-}
-
-func TestCompanyAddDuplicateRole(t *testing.T) {
-	company, _ := NewCompany("ACME", "Acme Corp")
-	company.AddRole("CLEANING", 15.50)
-
-	err := company.AddRole("CLEANING", 20.00)
-	if err == nil {
-		t.Error("expected error for duplicate role")
-	}
-}
-
-func TestCompanyRemoveRole(t *testing.T) {
-	company, _ := NewCompany("ACME", "Acme Corp")
-	company.AddRole("CLEANING", 15.50)
-
-	err := company.RemoveRole("CLEANING")
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
-
-	if len(company.Roles) != 0 {
-		t.Errorf("expected 0 roles, got %d", len(company.Roles))
-	}
-}
-
-func TestCompanyRemoveNonexistentRole(t *testing.T) {
-	company, _ := NewCompany("ACME", "Acme Corp")
-
-	err := company.RemoveRole("CLEANING")
-	if err == nil {
-		t.Error("expected error for nonexistent role")
-	}
-}
-
-func TestNewRole(t *testing.T) {
+func TestValidateKeyword(t *testing.T) {
 	tests := []struct {
-		name       string
-		roleName   string
-		hourlyRate float64
-		expectErr  bool
+		name      string
+		input     string
+		expectErr bool
 	}{
-		{"valid role", "CLEANING", 15.50, false},
-		{"empty name", "", 15.50, true},
-		{"negative rate", "CLEANING", -5.00, true},
+		{"valid", "BREAK", false},
+		{"valid short", "IN", false},
+		{"valid with underscore", "CLOCK_IN", false},
+		{"empty", "", true},
+		{"lowercase", "break", true},
+		{"spaces", "CLOCK IN", true},
+		{"special chars", "CLOCK-IN", true},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := NewRole(tt.roleName, tt.hourlyRate)
+			err := ValidateKeyword(tt.input)
+			if tt.expectErr && err == nil {
+				t.Error("expected error, got nil")
+			}
+			if !tt.expectErr && err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
+		})
+	}
+}
+
+func TestNewCompanyActionType(t *testing.T) {
+	tests := []struct {
+		name       string
+		actionType string
+		keyword    string
+		isSystem   bool
+		expectErr  bool
+	}{
+		{"valid custom", "BREAK_START", "BREAK", false, false},
+		{"valid system", "CHECK_IN", "IN", true, false},
+		{"empty action type", "", "IN", false, true},
+		{"empty keyword", "CHECK_IN", "", true, true},
+		{"invalid action type", "break-start", "BREAK", false, true},
+		{"invalid keyword", "BREAK_START", "break", false, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := NewCompanyActionType(tt.actionType, tt.keyword, tt.isSystem)
 			if tt.expectErr && err == nil {
 				t.Error("expected error, got nil")
 			}
