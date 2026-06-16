@@ -44,6 +44,10 @@ func (m *MockDashboardRepository) GetWorkerStats(ctx context.Context, companyCod
 	return []WorkerStats{}, nil
 }
 
+func (m *MockDashboardRepository) GetActionTypeBreakdown(ctx context.Context, companyCode string, from, to time.Time) ([]ActionTypeCount, error) {
+	return []ActionTypeCount{}, nil
+}
+
 func TestDashboardService_GetStats(t *testing.T) {
 	repo := NewMockDashboardRepository()
 	repo.currentlyWorking = []ActiveWorker{
