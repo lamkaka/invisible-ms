@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/google/uuid"
 	"github.com/scalica/ims/internal/company"
 )
 
@@ -30,6 +31,11 @@ func (s *WorkerService) CreateWorker(ctx context.Context, id, phone, name, compa
 		if !companyEntity.HasRole(roleName) {
 			return nil, fmt.Errorf("role %s does not exist in company %s", roleName, companyCode)
 		}
+	}
+
+	// Generate UUID if not provided
+	if id == "" {
+		id = uuid.New().String()
 	}
 
 	worker, err := NewWorker(id, phone, name, companyCode)

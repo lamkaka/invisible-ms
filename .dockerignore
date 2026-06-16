@@ -1,0 +1,7 @@
+bin/
+ims
+server
+.env
+*.md
+.git/
+.gitignore

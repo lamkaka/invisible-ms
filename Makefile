@@ -1,4 +1,4 @@
-.PHONY: build run test migrate
+.PHONY: build run test migrate docker-build docker-up docker-down docker-logs docker-restart
 
 build:
 	go build -o bin/server ./cmd/server
@@ -10,5 +10,18 @@ test:
 	go test ./...
 
 migrate:
-	@echo "TODO: run migrations against Spanner (use spanner-cli or custom tool)"
-	@echo "Example: for f in migrations/*.sql; do echo \"Running $$f...\"; done"
+	go run ./cmd/migrate
+
+docker-build:
+	docker compose build
+
+docker-up:
+	docker compose up -d
+
+docker-down:
+	docker compose down
+
+docker-logs:
+	docker compose logs -f
+
+docker-restart: docker-down docker-up

@@ -1,0 +1,52 @@
+x-env: &spanner-env
+  SPANNER_PROJECT_ID: ${SPANNER_PROJECT_ID:-ims-local}
+  SPANNER_INSTANCE_ID: ${SPANNER_INSTANCE_ID:-ims-instance}
+  SPANNER_DATABASE_ID: ${SPANNER_DATABASE_ID:-ims-db}
+  SPANNER_EMULATOR_HOST: spanner-emulator:9010
+
+services:
+  spanner-emulator:
+    image: gcr.io/cloud-spanner-emulator/emulator:latest
+    ports:
+      - "9010:9010"
+      - "9020:9020"
+
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: /app/migrate
+    depends_on:
+      - spanner-emulator
+    environment:
+      <<: *spanner-env
+    restart: "no"
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      <<: *spanner-env
+      PORT: "8080"
+      WEBHOOK_SECRET: ${WEBHOOK_SECRET:-test-secret}
+    expose:
+      - "8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 -O /dev/null http://localhost:8080/api/dashboard/stats || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  nginx:
+    build:
+      context: .
+      dockerfile: nginx/Dockerfile
+    depends_on:
+      app:
+        condition: service_healthy
+    ports:
+      - "8888:80"
