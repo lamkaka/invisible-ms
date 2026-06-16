@@ -1,0 +1,191 @@
+{{template "layout.html" .}}
+
+{{define "title"}}Actions - IMS{{end}}
+
+{{define "content"}}
+<div class="actions-page" x-data="actionTypes()" x-init="init()" data-company-code="ACME">
+    <header class="page-header">
+        <h1>Actions</h1>
+        <button @click="showCreateModal = true" class="btn btn-primary">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Add Action
+        </button>
+    </header>
+
+    <!-- Loading State -->
+    <div class="loading-state" x-show="loading && !actionTypes.length">
+        <div class="spinner"></div>
+        <p>Loading actions...</p>
+    </div>
+
+    <!-- Error State -->
+    <div class="error-state" x-show="error">
+        <p>Error loading data: <span x-text="error"></span></p>
+    </div>
+
+    <!-- Actions Table -->
+    <div class="table-container" x-show="actionTypes.length">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Action</th>
+                    <th>Keyword</th>
+                    <th>Type</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <template x-for="actionType in actionTypes" :key="actionType.action_type">
+                    <tr>
+                        <td>
+                            <span class="action-type-name" x-text="actionType.action_type"></span>
+                        </td>
+                        <td>
+                            <span class="keyword-badge" x-text="actionType.keyword"></span>
+                        </td>
+                        <td>
+                            <span class="type-badge" :class="actionType.is_system ? 'type-system' : 'type-custom'">
+                                <span x-text="actionType.is_system ? 'System' : 'Custom'"></span>
+                            </span>
+                        </td>
+                        <td>
+                            <div class="action-buttons">
+                                <button @click="editActionType(actionType)" class="btn btn-icon" title="Edit Keyword">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                                        <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                    </svg>
+                                </button>
+                                <button @click="deleteActionType(actionType)" class="btn btn-icon" :disabled="actionType.is_system" :title="actionType.is_system ? 'Cannot delete system action type' : 'Delete'">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="3,6 5,6 21,6"/>
+                                        <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                                        <line x1="10" y1="11" x2="10" y2="17"/>
+                                        <line x1="14" y1="11" x2="14" y2="17"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                </template>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Empty State -->
+    <div class="empty-state" x-show="!loading && !actionTypes.length">
+        <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
+            <rect x="9" y="3" width="6" height="4" rx="1"/>
+            <line x1="9" y1="12" x2="15" y2="12"/>
+            <line x1="9" y1="16" x2="13" y2="16"/>
+        </svg>
+        <h3>No actions found</h3>
+        <p>Get started by adding your first custom action</p>
+    </div>
+
+    <!-- Create Modal -->
+    <div class="modal-overlay" x-show="showCreateModal" x-transition.opacity>
+        <div class="modal" @click.away="closeModal()">
+            <div class="modal-header">
+                <h2>Add Action</h2>
+                <button @click="closeModal()" class="modal-close">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <form @submit.prevent="saveActionType()" class="modal-form">
+                <div class="form-group">
+                    <label for="actionType">Action Type Name</label>
+                    <input type="text" id="actionType" x-model="form.action_type" required placeholder="e.g., BREAK_START">
+                    <p class="form-hint">Use uppercase with underscores (e.g., BREAK_START)</p>
+                </div>
+                <div class="form-group">
+                    <label for="keyword">Keyword</label>
+                    <input type="text" id="keyword" x-model="form.keyword" required placeholder="e.g., BREAK">
+                    <p class="form-hint">The keyword workers will use in WhatsApp messages</p>
+                </div>
+                <div class="form-error" x-show="formError">
+                    <p x-text="formError"></p>
+                </div>
+                <div class="form-actions">
+                    <button type="button" @click="closeModal()" class="btn btn-secondary">Cancel</button>
+                    <button type="submit" class="btn btn-primary" :disabled="saving">
+                        <span x-show="!saving">Create</span>
+                        <span x-show="saving">Creating...</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div class="modal-overlay" x-show="showEditModal" x-transition.opacity>
+        <div class="modal" @click.away="closeModal()">
+            <div class="modal-header">
+                <h2>Edit Keyword</h2>
+                <button @click="closeModal()" class="modal-close">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <form @submit.prevent="saveActionType()" class="modal-form">
+                <div class="form-group">
+                    <label>Action Type</label>
+                    <p class="form-value" x-text="form.action_type"></p>
+                </div>
+                <div class="form-group">
+                    <label for="editKeyword">Keyword</label>
+                    <input type="text" id="editKeyword" x-model="form.keyword" required placeholder="Enter keyword">
+                </div>
+                <div class="form-error" x-show="formError">
+                    <p x-text="formError"></p>
+                </div>
+                <div class="form-actions">
+                    <button type="button" @click="closeModal()" class="btn btn-secondary">Cancel</button>
+                    <button type="submit" class="btn btn-primary" :disabled="saving">
+                        <span x-show="!saving">Save</span>
+                        <span x-show="saving">Saving...</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal-overlay" x-show="showDeleteModal" x-transition.opacity>
+        <div class="modal" @click.away="closeModal()">
+            <div class="modal-header">
+                <h2>Delete Action</h2>
+                <button @click="closeModal()" class="modal-close">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-form">
+                <p>Are you sure you want to delete the action <strong x-text="form.action_type"></strong>?</p>
+                <p class="form-hint">This action cannot be undone.</p>
+                <div class="form-error" x-show="formError">
+                    <p x-text="formError"></p>
+                </div>
+                <div class="form-actions">
+                    <button type="button" @click="closeModal()" class="btn btn-secondary">Cancel</button>
+                    <button type="button" @click="confirmDelete()" class="btn btn-danger" :disabled="saving">
+                        <span x-show="!saving">Delete</span>
+                        <span x-show="saving">Deleting...</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{{end}}

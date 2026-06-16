@@ -208,12 +208,145 @@ document.addEventListener('alpine:init', () => {
         closeModal() {
             this.showCreateModal = false;
             this.showEditModal = false;
+            this.showDeleteModal = false;
             this.form = {
                 worker_id: '',
                 name: '',
                 phone_number: '',
                 assigned_roles: []
             };
+            this.formError = null;
+        }
+    }));
+
+    // ============================================
+    // Action Types Component
+    // ============================================
+    Alpine.data('actionTypes', () => ({
+        actionTypes: [],
+        loading: false,
+        error: null,
+        showCreateModal: false,
+        showEditModal: false,
+        showDeleteModal: false,
+        saving: false,
+        formError: null,
+        companyCode: 'ACME', // default, overridden from data attribute
+        form: {
+            action_type: '',
+            keyword: ''
+        },
+
+        async init() {
+            this.companyCode = this.$el.dataset.companyCode || 'ACME';
+            await this.fetchActionTypes();
+        },
+
+        async fetchActionTypes() {
+            this.loading = true;
+            this.error = null;
+
+            try {
+                const response = await fetch(`/api/companies/${this.companyCode}/action-types`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                this.actionTypes = await response.json();
+            } catch (err) {
+                this.error = err.message;
+                console.error('Failed to fetch action types:', err);
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        editActionType(actionType) {
+            this.form = {
+                action_type: actionType.action_type,
+                keyword: actionType.keyword
+            };
+            this.showEditModal = true;
+        },
+
+        async saveActionType() {
+            this.saving = true;
+            this.formError = null;
+
+            try {
+                const isEdit = this.showEditModal;
+                const url = isEdit
+                    ? `/api/companies/${this.companyCode}/action-types/${this.form.action_type}`
+                    : `/api/companies/${this.companyCode}/action-types`;
+
+                const method = isEdit ? 'PUT' : 'POST';
+
+                const response = await fetch(url, {
+                    method,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action_type: this.form.action_type,
+                        keyword: this.form.keyword
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(errorText || `HTTP error! status: ${response.status}`);
+                }
+
+                this.closeModal();
+                await this.fetchActionTypes();
+            } catch (err) {
+                this.formError = err.message;
+                console.error('Failed to save action type:', err);
+            } finally {
+                this.saving = false;
+            }
+        },
+
+        deleteActionType(actionType) {
+            this.form = {
+                action_type: actionType.action_type,
+                keyword: actionType.keyword
+            };
+            this.showDeleteModal = true;
+        },
+
+        async confirmDelete() {
+            this.saving = true;
+            this.formError = null;
+
+            try {
+                const response = await fetch(`/api/companies/${this.companyCode}/action-types/${this.form.action_type}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(errorText || `HTTP error! status: ${response.status}`);
+                }
+
+                this.closeModal();
+                await this.fetchActionTypes();
+            } catch (err) {
+                this.formError = err.message;
+                console.error('Failed to delete action type:', err);
+            } finally {
+                this.saving = false;
+            }
+        },
+
+        closeModal() {
+            this.showCreateModal = false;
+            this.showEditModal = false;
+            this.showDeleteModal = false;
+            this.form = {
+                action_type: '',
+                keyword: ''
+            };
+            this.formError = null;
         }
     }));
 });

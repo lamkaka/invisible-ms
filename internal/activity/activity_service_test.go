@@ -2,10 +2,12 @@ package activity
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
 	"github.com/scalica/ims/internal/company"
+	"github.com/scalica/ims/internal/shared"
 	"github.com/scalica/ims/internal/worker"
 )
 
@@ -98,7 +100,7 @@ func (m *MockWorkerService) GetWorkerByPhone(ctx context.Context, phone, company
 			return w, nil
 		}
 	}
-	return nil, ErrWorkerNotFound
+	return nil, fmt.Errorf("%w: worker with phone %s", shared.ErrNotFound, phone)
 }
 
 // --- Mock helpers for CompanyService ---

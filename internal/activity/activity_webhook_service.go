@@ -3,10 +3,12 @@ package activity
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/scalica/ims/internal/company"
+	"github.com/scalica/ims/internal/shared"
 	"github.com/scalica/ims/internal/worker"
 )
 
@@ -50,7 +52,10 @@ func (s *WebhookService) ProcessWebhook(ctx context.Context, payload WebhookPayl
 	// Find worker by phone and company
 	workerEntity, err := s.workerService.GetWorkerByPhone(ctx, payload.Phone, payload.CompanyCode)
 	if err != nil {
-		return nil, ErrWorkerNotFound
+		if errors.Is(err, shared.ErrNotFound) {
+			return nil, ErrWorkerNotFound
+		}
+		return nil, fmt.Errorf("failed to look up worker: %w", err)
 	}
 
 	if !workerEntity.IsActive {
