@@ -1,3 +1,108 @@
 package company
 
-// TODO: HTTP handlers for company management endpoints (GET/POST/PUT /api/companies, roles management)
+import (
+	"encoding/json"
+	"net/http"
+
+	"github.com/gorilla/mux"
+)
+
+type CompanyHandler struct {
+	service *CompanyService
+}
+
+func NewCompanyHandler(service *CompanyService) *CompanyHandler {
+	return &CompanyHandler{service: service}
+}
+
+func (h *CompanyHandler) RegisterRoutes(router *mux.Router) {
+	router.HandleFunc("/api/companies", h.ListCompanies).Methods("GET")
+	router.HandleFunc("/api/companies", h.CreateCompany).Methods("POST")
+	router.HandleFunc("/api/companies/{code}", h.GetCompany).Methods("GET")
+	router.HandleFunc("/api/companies/{code}/roles", h.AddRole).Methods("POST")
+	router.HandleFunc("/api/companies/{code}/roles/{role}", h.RemoveRole).Methods("DELETE")
+}
+
+func (h *CompanyHandler) ListCompanies(w http.ResponseWriter, r *http.Request) {
+	companies, err := h.service.ListCompanies(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(companies)
+}
+
+func (h *CompanyHandler) CreateCompany(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		CompanyCode string `json:"company_code"`
+		CompanyName string `json:"company_name"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	company, err := h.service.CreateCompany(r.Context(), req.CompanyCode, req.CompanyName)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(company)
+}
+
+func (h *CompanyHandler) GetCompany(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	code := vars["code"]
+
+	company, err := h.service.GetCompany(r.Context(), code)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(company)
+}
+
+func (h *CompanyHandler) AddRole(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	code := vars["code"]
+
+	var req struct {
+		RoleName   string  `json:"role_name"`
+		HourlyRate float64 `json:"hourly_rate"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	err := h.service.AddRole(r.Context(), code, req.RoleName, req.HourlyRate)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+}
+
+func (h *CompanyHandler) RemoveRole(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	code := vars["code"]
+	role := vars["role"]
+
+	err := h.service.RemoveRole(r.Context(), code, role)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
