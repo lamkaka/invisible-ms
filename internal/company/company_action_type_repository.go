@@ -9,7 +9,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/scalica/ims/internal/shared"
+	"github.com/lamkaka/invisible-ms/internal/shared"
 )
 
 type CompanyActionTypeRepository interface {

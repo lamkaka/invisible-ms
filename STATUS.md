@@ -96,8 +96,8 @@ Handler → Service → Domain ← Repository
    ```bash
    export SPANNER_EMULATOR_HOST=localhost:9010
    export SPANNER_PROJECT_ID=ims-project
-   export SPANNER_INSTANCE_ID=ims-instance
-   export SPANNER_DATABASE_ID=ims-db
+   export SPANNER_INSTANCE_ID=invisible-ms-instance
+   export SPANNER_DATABASE_ID=invisible-ms-db
    go run cmd/setup/main.go
    ```
 
@@ -106,8 +106,8 @@ Handler → Service → Domain ← Repository
 ```bash
 export SPANNER_EMULATOR_HOST=localhost:9010
 export SPANNER_PROJECT_ID=ims-project
-export SPANNER_INSTANCE_ID=ims-instance
-export SPANNER_DATABASE_ID=ims-db
+export SPANNER_INSTANCE_ID=invisible-ms-instance
+export SPANNER_DATABASE_ID=invisible-ms-db
 export WEBHOOK_SECRET=your-secret-here
 ./ims
 ```
@@ -205,8 +205,8 @@ All files follow `{entity}_{role}.go` pattern:
 
 ```bash
 SPANNER_PROJECT_ID=ims-project
-SPANNER_INSTANCE_ID=ims-instance
-SPANNER_DATABASE_ID=ims-db
+SPANNER_INSTANCE_ID=invisible-ms-instance
+SPANNER_DATABASE_ID=invisible-ms-db
 SPANNER_EMULATOR_HOST=localhost:9010  # For local development
 PORT=8080
 WEBHOOK_SECRET=your-secret-here

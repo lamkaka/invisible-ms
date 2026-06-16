@@ -575,7 +575,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/scalica/ims/internal/shared"
+	"github.com/lamkaka/invisible-ms/internal/shared"
 )
 
 type CompanyRepository interface {
@@ -1299,7 +1299,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/scalica/ims/internal/shared"
+	"github.com/lamkaka/invisible-ms/internal/shared"
 )
 
 type WorkerRepository interface {
@@ -1968,7 +1968,7 @@ import (
 	"cloud.google.com/go/spanner"
 	"google.golang.org/api/iterator"
 
-	"github.com/scalica/ims/internal/shared"
+	"github.com/lamkaka/invisible-ms/internal/shared"
 )
 
 type ActivityRepository interface {
@@ -2116,8 +2116,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/scalica/ims/internal/company"
-	"github.com/scalica/ims/internal/worker"
+	"github.com/lamkaka/invisible-ms/internal/company"
+	"github.com/lamkaka/invisible-ms/internal/worker"
 )
 
 var (
@@ -2219,7 +2219,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/scalica/ims/internal/company"
+	"github.com/lamkaka/invisible-ms/internal/company"
 )
 
 type Session struct {
@@ -2819,11 +2819,11 @@ import (
 
 	"github.com/gorilla/mux"
 
-	"github.com/scalica/ims/internal/activity"
-	"github.com/scalica/ims/internal/company"
-	"github.com/scalica/ims/internal/dashboard"
-	"github.com/scalica/ims/internal/shared"
-	"github.com/scalica/ims/internal/worker"
+	"github.com/lamkaka/invisible-ms/internal/activity"
+	"github.com/lamkaka/invisible-ms/internal/company"
+	"github.com/lamkaka/invisible-ms/internal/dashboard"
+	"github.com/lamkaka/invisible-ms/internal/shared"
+	"github.com/lamkaka/invisible-ms/internal/worker"
 )
 
 func main() {

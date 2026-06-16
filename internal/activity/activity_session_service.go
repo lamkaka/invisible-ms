@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/scalica/ims/internal/company"
+	"github.com/lamkaka/invisible-ms/internal/company"
 )
 
 type Session struct {

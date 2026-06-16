@@ -113,7 +113,7 @@ ims/
 ├── Dockerfile                     # Multi-stage Go build (server + migrate binaries)
 ├── docker-compose.yml             # Full local stack (4 services)
 ├── Makefile                       # Build/run/test/docker targets
-├── go.mod                         # Module: github.com/scalica/ims
+├── go.mod                         # Module: github.com/lamkaka/invisible-ms
 └── .env.example                   # Required environment variables
 ```
 
@@ -178,9 +178,9 @@ docker run -d --name spanner-emulator \
 ### 2. Set Environment Variables
 
 ```bash
-export SPANNER_PROJECT_ID=ims-local
-export SPANNER_INSTANCE_ID=ims-instance
-export SPANNER_DATABASE_ID=ims-db
+export SPANNER_PROJECT_ID=invisible-ms-local
+export SPANNER_INSTANCE_ID=invisible-ms-instance
+export SPANNER_DATABASE_ID=invisible-ms-db
 export SPANNER_EMULATOR_HOST=localhost:9010
 export PORT=8080
 export WEBHOOK_SECRET=test-secret
@@ -214,9 +214,9 @@ Creates sample companies, workers, and activity data for development and testing
 
 | Variable | Default | Required | Description |
 |----------|---------|----------|-------------|
-| `SPANNER_PROJECT_ID` | `ims-local` | Yes | GCP project or emulator project ID |
-| `SPANNER_INSTANCE_ID` | `ims-instance` | Yes | Spanner instance name |
-| `SPANNER_DATABASE_ID` | `ims-db` | Yes | Spanner database name |
+| `SPANNER_PROJECT_ID` | `invisible-ms-local` | Yes | GCP project or emulator project ID |
+| `SPANNER_INSTANCE_ID` | `invisible-ms-instance` | Yes | Spanner instance name |
+| `SPANNER_DATABASE_ID` | `invisible-ms-db` | Yes | Spanner database name |
 | `SPANNER_EMULATOR_HOST` | (empty) | For emulator | Spanner emulator host:port (e.g., `localhost:9010`) |
 | `PORT` | `8080` | No | HTTP server port |
 | `WEBHOOK_SECRET` | (empty) | For webhooks | Secret value for webhook authentication header |

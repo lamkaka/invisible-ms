@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	"github.com/scalica/ims/internal/company"
+	"github.com/lamkaka/invisible-ms/internal/company"
 )
 
 var ErrWorkerNotFound = errors.New("worker not found")

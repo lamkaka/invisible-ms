@@ -12,11 +12,11 @@ import (
 
 	"github.com/gorilla/mux"
 
-	"github.com/scalica/ims/internal/activity"
-	"github.com/scalica/ims/internal/company"
-	"github.com/scalica/ims/internal/dashboard"
-	"github.com/scalica/ims/internal/shared"
-	"github.com/scalica/ims/internal/worker"
+	"github.com/lamkaka/invisible-ms/internal/activity"
+	"github.com/lamkaka/invisible-ms/internal/company"
+	"github.com/lamkaka/invisible-ms/internal/dashboard"
+	"github.com/lamkaka/invisible-ms/internal/shared"
+	"github.com/lamkaka/invisible-ms/internal/worker"
 )
 
 func main() {

@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/scalica/ims/internal/company"
+	"github.com/lamkaka/invisible-ms/internal/company"
 )
 
 type MockWorkerRepository struct {

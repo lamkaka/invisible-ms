@@ -1,7 +1,7 @@
 x-env: &spanner-env
-  SPANNER_PROJECT_ID: ${SPANNER_PROJECT_ID:-ims-local}
-  SPANNER_INSTANCE_ID: ${SPANNER_INSTANCE_ID:-ims-instance}
-  SPANNER_DATABASE_ID: ${SPANNER_DATABASE_ID:-ims-db}
+  SPANNER_PROJECT_ID: ${SPANNER_PROJECT_ID:-invisible-ms-local}
+  SPANNER_INSTANCE_ID: ${SPANNER_INSTANCE_ID:-invisible-ms-instance}
+  SPANNER_DATABASE_ID: ${SPANNER_DATABASE_ID:-invisible-ms-db}
   SPANNER_EMULATOR_HOST: spanner-emulator:9010
 
 services:

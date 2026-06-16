@@ -7,7 +7,7 @@ import (
 
 	"github.com/gorilla/mux"
 
-	"github.com/scalica/ims/internal/shared"
+	"github.com/lamkaka/invisible-ms/internal/shared"
 )
 
 type CompanyHandler struct {

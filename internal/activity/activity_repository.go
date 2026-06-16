@@ -8,7 +8,7 @@ import (
 	"cloud.google.com/go/spanner"
 	"google.golang.org/api/iterator"
 
-	"github.com/scalica/ims/internal/shared"
+	"github.com/lamkaka/invisible-ms/internal/shared"
 )
 
 type ActivityRepository interface {

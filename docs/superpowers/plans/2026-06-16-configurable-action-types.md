@@ -299,7 +299,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/scalica/ims/internal/shared"
+	"github.com/lamkaka/invisible-ms/internal/shared"
 )
 
 type CompanyActionTypeRepository interface {
@@ -992,8 +992,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/scalica/ims/internal/company"
-	"github.com/scalica/ims/internal/worker"
+	"github.com/lamkaka/invisible-ms/internal/company"
+	"github.com/lamkaka/invisible-ms/internal/worker"
 )
 
 var (
@@ -1238,8 +1238,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/scalica/ims/internal/company"
-	"github.com/scalica/ims/internal/worker"
+	"github.com/lamkaka/invisible-ms/internal/company"
+	"github.com/lamkaka/invisible-ms/internal/worker"
 )
 
 type MockActivityRepository struct {

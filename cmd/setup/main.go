@@ -18,8 +18,8 @@ func main() {
 	ctx := context.Background()
 
 	projectID := getEnv("SPANNER_PROJECT_ID", "ims-project")
-	instanceID := getEnv("SPANNER_INSTANCE_ID", "ims-instance")
-	databaseID := getEnv("SPANNER_DATABASE_ID", "ims-db")
+	instanceID := getEnv("SPANNER_INSTANCE_ID", "invisible-ms-instance")
+	databaseID := getEnv("SPANNER_DATABASE_ID", "invisible-ms-db")
 
 	// Create instance admin client
 	instanceAdmin, err := instance.NewInstanceAdminClient(ctx)

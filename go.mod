@@ -1,4 +1,4 @@
-module github.com/scalica/ims
+module github.com/lamkaka/invisible-ms
 
 go 1.26.4
 
