@@ -320,17 +320,85 @@ CREATE INDEX activity_logs_by_action ON activity_logs(company_code, action_type,
 - Domain errors are defined in `internal/shared/errors.go`
 - Services return domain errors; handlers translate to HTTP status codes
 - Use Go 1.13+ error wrapping with `%w` for context
+- **HTTP status code mapping:**
+  - `shared.ErrNotFound` → 404 Not Found
+  - `shared.ErrAlreadyExists` → 409 Conflict
+  - `shared.ErrInvalidInput` → 400 Bad Request
+  - Internal/DB errors → 500 Internal Server Error
+
+### Spanner Transaction Patterns
+
+**Use ReadWriteTransaction for:**
+- Multi-table operations (e.g., insert parent + children)
+- Operations that must be atomic (e.g., check-out validation)
+- Update operations that modify related entities (e.g., worker + roles)
+
+**Example pattern:**
+```go
+_, err := r.client.ReadWriteTransaction(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
+    // Delete existing child records
+    txn.BufferWrite(spanner.Delete("child_table", ...))
+    
+    // Update parent
+    txn.BufferWrite(spanner.Update("parent_table", ...))
+    
+    // Insert new child records
+    for _, child := range children {
+        txn.BufferWrite(spanner.Insert("child_table", ...))
+    }
+    
+    return nil
+})
+```
+
+**Use single Apply for:**
+- Single-table operations
+- Read-only operations
+- Simple inserts with no related entities
+
+### Webhook Security
+- All webhooks require `X-Webhook-Secret` header
+- Secret is loaded from `WEBHOOK_SECRET` environment variable
+- Handler validates secret before processing
+- Returns 401 Unauthorized if secret is missing or invalid
+
+### Role Validation
+- Workers can only be assigned roles that exist in the company's `company_roles` table
+- `WorkerService` depends on `CompanyService` to validate roles
+- Validation happens in `CreateWorker` and `AssignRole` methods
+- Prevents phantom roles that would break cost calculations
 
 ### Testing
 - Domain layer: unit tests with no external dependencies
 - Service layer: mock repositories
-- Repository layer: integration tests against Spanner emulator
-- Handler layer: HTTP tests with mock services
+- Repository layer: integration tests against Spanner emulator (skipped for MVP)
+- Handler layer: HTTP tests with mock services (not yet implemented)
 
 ### Configuration
-- Environment variables for all config (Spanner project/instance/database, port, etc.)
+- Environment variables for all config (Spanner project/instance/database, port, webhook secret, etc.)
 - `.env.example` documents required variables
 - `internal/shared/config.go` loads and validates config
+
+### Performance Guidelines
+- **Use SQL aggregations** instead of loading all records into memory
+- **Avoid N+1 queries** - use JOINs when fetching related data
+- **Parse templates once** at startup, not per-request
+- **Use indexes** for frequently queried fields (see database schema)
+- **Batch operations** when possible (e.g., insert multiple roles in one transaction)
+
+### Dashboard Query Patterns
+- Session pairing: Use correlated subqueries to pair CHECK_IN with next CHECK_OUT
+- Cost calculation: JOIN with `company_roles` to get hourly_rate in same query
+- Aggregations: Use `SUM`, `COUNT`, `AVG` in SQL, not in Go code
+- Time-based filtering: Use `TIMESTAMP_DIFF` for duration calculations
+
+### Common Pitfalls to Avoid
+1. **Don't update parent without children** - Always use transactions for multi-table updates
+2. **Don't skip role validation** - Always validate roles exist in company catalog
+3. **Don't load all logs into memory** - Use SQL aggregations for dashboard stats
+4. **Don't parse templates per-request** - Parse once at startup
+5. **Don't ignore error types** - Map domain errors to appropriate HTTP status codes
+6. **Don't allow concurrent check-outs** - Use atomic transactions for check-out validation
 
 ## MVP Scope
 
