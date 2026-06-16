@@ -1,4 +1,51 @@
 package shared
 
-// TODO: load environment variables (SPANNER_PROJECT_ID, SPANNER_INSTANCE_ID, SPANNER_DATABASE_ID, PORT),
-// initialize Spanner client, and provide configuration struct
+import (
+	"context"
+	"fmt"
+	"os"
+	"strconv"
+
+	"cloud.google.com/go/spanner"
+)
+
+type Config struct {
+	SpannerProjectID  string
+	SpannerInstanceID string
+	SpannerDatabaseID string
+	Port              int
+}
+
+func LoadConfig() (*Config, error) {
+	port, err := strconv.Atoi(getEnv("PORT", "8080"))
+	if err != nil {
+		return nil, fmt.Errorf("invalid PORT: %w", err)
+	}
+
+	return &Config{
+		SpannerProjectID:  getEnv("SPANNER_PROJECT_ID", ""),
+		SpannerInstanceID: getEnv("SPANNER_INSTANCE_ID", ""),
+		SpannerDatabaseID: getEnv("SPANNER_DATABASE_ID", ""),
+		Port:              port,
+	}, nil
+}
+
+func (c *Config) SpannerDatabasePath() string {
+	return fmt.Sprintf("projects/%s/instances/%s/databases/%s",
+		c.SpannerProjectID, c.SpannerInstanceID, c.SpannerDatabaseID)
+}
+
+func NewSpannerClient(ctx context.Context, cfg *Config) (*spanner.Client, error) {
+	client, err := spanner.NewClient(ctx, cfg.SpannerDatabasePath())
+	if err != nil {
+		return nil, fmt.Errorf("failed to create Spanner client: %w", err)
+	}
+	return client, nil
+}
+
+func getEnv(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
+}

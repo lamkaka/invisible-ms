@@ -8,8 +8,6 @@
 *.test
 
 # Go
-*.mod
-*.sum
 vendor/
 
 # IDE
