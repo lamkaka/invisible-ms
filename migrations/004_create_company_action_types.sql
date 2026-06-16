@@ -2,7 +2,7 @@ CREATE TABLE company_action_types (
   company_code STRING(50) NOT NULL,
   action_type STRING(50) NOT NULL,
   keyword STRING(20) NOT NULL,
-  is_system BOOL NOT NULL DEFAULT FALSE,
+  is_system BOOL NOT NULL
 ) PRIMARY KEY (company_code, action_type),
   INTERLEAVE IN PARENT companies ON DELETE CASCADE;
 

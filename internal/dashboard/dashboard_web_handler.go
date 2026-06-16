@@ -10,10 +10,11 @@ import (
 )
 
 type DashboardWebHandler struct {
-	service          *DashboardService
-	templateDir      string
-	dashboardTmpl    *template.Template
-	workersTmpl      *template.Template
+	service     *DashboardService
+	templateDir string
+	dashboardTmpl *template.Template
+	workersTmpl   *template.Template
+	actionsTmpl   *template.Template
 }
 
 func NewDashboardWebHandler(service *DashboardService, templateDir string) (*DashboardWebHandler, error) {
@@ -33,17 +34,27 @@ func NewDashboardWebHandler(service *DashboardService, templateDir string) (*Das
 		return nil, fmt.Errorf("failed to parse workers templates: %w", err)
 	}
 
+	actionsTmpl, err := template.ParseFiles(
+		filepath.Join(templateDir, "layout.html"),
+		filepath.Join(templateDir, "actions.html"),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse actions templates: %w", err)
+	}
+
 	return &DashboardWebHandler{
 		service:       service,
 		templateDir:   templateDir,
 		dashboardTmpl: dashboardTmpl,
 		workersTmpl:   workersTmpl,
+		actionsTmpl:   actionsTmpl,
 	}, nil
 }
 
 func (h *DashboardWebHandler) RegisterRoutes(router *mux.Router) {
 	router.HandleFunc("/dashboard", h.DashboardPage).Methods("GET")
 	router.HandleFunc("/workers", h.WorkersPage).Methods("GET")
+	router.HandleFunc("/actions", h.ActionsPage).Methods("GET")
 }
 
 func (h *DashboardWebHandler) DashboardPage(w http.ResponseWriter, r *http.Request) {
@@ -69,6 +80,13 @@ func (h *DashboardWebHandler) DashboardPage(w http.ResponseWriter, r *http.Reque
 
 func (h *DashboardWebHandler) WorkersPage(w http.ResponseWriter, r *http.Request) {
 	if err := h.workersTmpl.ExecuteTemplate(w, "workers.html", nil); err != nil {
+		http.Error(w, "Template error: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+func (h *DashboardWebHandler) ActionsPage(w http.ResponseWriter, r *http.Request) {
+	if err := h.actionsTmpl.ExecuteTemplate(w, "actions.html", nil); err != nil {
 		http.Error(w, "Template error: "+err.Error(), http.StatusInternalServerError)
 		return
 	}

@@ -676,9 +676,99 @@ body {
     margin-bottom: 24px;
 }
 
+/* ============================================
+   Action Types Page
+   ============================================ */
+.actions-page .page-header {
+    margin-bottom: 24px;
+}
+
+.action-type-name {
+    font-weight: 500;
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+}
+
+.keyword-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    background: var(--amber-bg);
+    color: var(--amber);
+    border-radius: var(--radius-full);
+    font-size: 0.75rem;
+    font-weight: 600;
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+}
+
+.type-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: var(--radius-full);
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.type-system {
+    background: var(--blue-bg);
+    color: var(--blue);
+}
+
+.type-custom {
+    background: var(--green-bg);
+    color: var(--green);
+}
+
+.form-value {
+    font-weight: 500;
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+}
+
+.form-hint {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 6px;
+}
+
+.form-error {
+    padding: 12px;
+    background: var(--red-bg);
+    border-radius: var(--radius);
+    color: var(--red);
+    font-size: 0.875rem;
+    margin-top: 12px;
+}
+
+.btn-danger {
+    background: var(--red);
+    color: var(--text-inverse);
+}
+
+.btn-danger:hover:not(:disabled) {
+    background: #dc2626;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+}
+
+/* ============================================
+   Action Buttons
+   ============================================ */
 .action-buttons {
     display: flex;
     gap: 8px;
+}
+
+.action-buttons .btn-icon:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.action-buttons .btn-icon:disabled:hover {
+    background: transparent;
+    color: var(--text-secondary);
 }
 
 .empty-state {
