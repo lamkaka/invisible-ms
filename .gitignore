@@ -1,6 +1,6 @@
 # Binaries
 ims
-server
+/server
 *.exe
 *.exe~
 *.dll

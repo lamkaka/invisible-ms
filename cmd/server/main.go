@@ -37,12 +37,13 @@ func main() {
 
 	// Initialize repositories
 	companyRepo := company.NewSpannerCompanyRepository(spannerClient)
+	companyActionTypeRepo := company.NewSpannerCompanyActionTypeRepository(spannerClient)
 	workerRepo := worker.NewSpannerWorkerRepository(spannerClient)
 	activityRepo := activity.NewSpannerActivityRepository(spannerClient)
 	dashboardRepo := dashboard.NewSpannerDashboardRepository(spannerClient)
 
 	// Initialize services
-	companyService := company.NewCompanyService(companyRepo)
+	companyService := company.NewCompanyService(companyRepo, companyActionTypeRepo)
 	workerService := worker.NewWorkerService(workerRepo, companyService)
 	activityWebhookService := activity.NewWebhookService(activityRepo, workerService, companyService)
 	activitySessionService := activity.NewSessionService(activityRepo, companyService)
