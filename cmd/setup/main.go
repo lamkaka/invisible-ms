@@ -75,7 +75,7 @@ func main() {
 		// Read migration files
 		migrations := []string{
 			"migrations/001_create_companies.sql",
-			"migrations/002_create_workers.sql",
+			"migrations/002_create_staff.sql",
 			"migrations/003_create_activity_logs.sql",
 		}
 

@@ -10,10 +10,10 @@ import (
 )
 
 type DashboardWebHandler struct {
-	service     *DashboardService
-	templateDir string
+	service       *DashboardService
+	templateDir   string
 	dashboardTmpl *template.Template
-	workersTmpl   *template.Template
+	staffTmpl     *template.Template
 	actionsTmpl   *template.Template
 }
 
@@ -26,12 +26,12 @@ func NewDashboardWebHandler(service *DashboardService, templateDir string) (*Das
 		return nil, fmt.Errorf("failed to parse dashboard templates: %w", err)
 	}
 
-	workersTmpl, err := template.ParseFiles(
+	staffTmpl, err := template.ParseFiles(
 		filepath.Join(templateDir, "layout.html"),
-		filepath.Join(templateDir, "workers.html"),
+		filepath.Join(templateDir, "staff.html"),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse workers templates: %w", err)
+		return nil, fmt.Errorf("failed to parse staff templates: %w", err)
 	}
 
 	actionsTmpl, err := template.ParseFiles(
@@ -46,14 +46,14 @@ func NewDashboardWebHandler(service *DashboardService, templateDir string) (*Das
 		service:       service,
 		templateDir:   templateDir,
 		dashboardTmpl: dashboardTmpl,
-		workersTmpl:   workersTmpl,
+		staffTmpl:     staffTmpl,
 		actionsTmpl:   actionsTmpl,
 	}, nil
 }
 
 func (h *DashboardWebHandler) RegisterRoutes(router *mux.Router) {
 	router.HandleFunc("/dashboard", h.DashboardPage).Methods("GET")
-	router.HandleFunc("/workers", h.WorkersPage).Methods("GET")
+	router.HandleFunc("/staff", h.StaffPage).Methods("GET")
 	router.HandleFunc("/actions", h.ActionsPage).Methods("GET")
 }
 
@@ -78,8 +78,8 @@ func (h *DashboardWebHandler) DashboardPage(w http.ResponseWriter, r *http.Reque
 	}
 }
 
-func (h *DashboardWebHandler) WorkersPage(w http.ResponseWriter, r *http.Request) {
-	if err := h.workersTmpl.ExecuteTemplate(w, "workers.html", nil); err != nil {
+func (h *DashboardWebHandler) StaffPage(w http.ResponseWriter, r *http.Request) {
+	if err := h.staffTmpl.ExecuteTemplate(w, "staff.html", nil); err != nil {
 		http.Error(w, "Template error: "+err.Error(), http.StatusInternalServerError)
 		return
 	}

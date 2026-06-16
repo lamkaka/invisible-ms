@@ -53,7 +53,7 @@ func (s *DashboardService) GetStats(ctx context.Context, companyCode string) (*D
 		return nil, err
 	}
 
-	workerStats, err := s.repo.GetWorkerStats(ctx, companyCode, weekAgo, time.Now())
+	staffStats, err := s.repo.GetStaffStats(ctx, companyCode, weekAgo, time.Now())
 	if err != nil {
 		return nil, err
 	}
@@ -76,8 +76,8 @@ func (s *DashboardService) GetStats(ctx context.Context, companyCode string) (*D
 			MonthCost:  monthCost,
 			CostByRole: costByRole,
 		},
-		WorkerActivity: WorkerActivity{
-			MostActiveWorkers: workerStats,
+		StaffActivity: StaffActivity{
+			MostActiveStaff: staffStats,
 		},
 		ActionTypeBreakdown: actionTypeBreakdown,
 	}, nil

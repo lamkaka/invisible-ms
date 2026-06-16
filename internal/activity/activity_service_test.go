@@ -8,7 +8,7 @@ import (
 
 	"github.com/lamkaka/invisible-ms/internal/company"
 	"github.com/lamkaka/invisible-ms/internal/shared"
-	"github.com/lamkaka/invisible-ms/internal/worker"
+	"github.com/lamkaka/invisible-ms/internal/staff"
 )
 
 type MockActivityRepository struct {
@@ -28,7 +28,7 @@ func (m *MockActivityRepository) CheckOutWithValidation(ctx context.Context, log
 	var latestCheckIn *ActivityLog
 	var latestCheckOut *ActivityLog
 	for _, l := range m.logs {
-		if l.WorkerID == log.WorkerID && l.Role == log.Role {
+		if l.StaffID == log.StaffID && l.Role == log.Role {
 			if l.ActionType == ActionCheckIn {
 				if latestCheckIn == nil || l.Timestamp.After(latestCheckIn.Timestamp) {
 					latestCheckIn = l
@@ -51,10 +51,10 @@ func (m *MockActivityRepository) CheckOutWithValidation(ctx context.Context, log
 	return nil
 }
 
-func (m *MockActivityRepository) GetByWorker(ctx context.Context, workerID string, from, to time.Time) ([]*ActivityLog, error) {
+func (m *MockActivityRepository) GetByWorker(ctx context.Context, staffID string, from, to time.Time) ([]*ActivityLog, error) {
 	var result []*ActivityLog
 	for _, l := range m.logs {
-		if l.WorkerID == workerID && l.Timestamp.After(from) && l.Timestamp.Before(to) {
+		if l.StaffID == staffID && l.Timestamp.After(from) && l.Timestamp.Before(to) {
 			result = append(result, l)
 		}
 	}
@@ -74,7 +74,7 @@ func (m *MockActivityRepository) GetByCompany(ctx context.Context, companyCode s
 func (m *MockActivityRepository) GetLatestByWorkerAndRole(ctx context.Context, workerID, role string, actionType string) (*ActivityLog, error) {
 	var latest *ActivityLog
 	for _, l := range m.logs {
-		if l.WorkerID == workerID && l.Role == role && l.ActionType == actionType {
+		if l.StaffID == workerID && l.Role == role && l.ActionType == actionType {
 			if latest == nil || l.Timestamp.After(latest.Timestamp) {
 				latest = l
 			}
@@ -87,20 +87,20 @@ func (m *MockActivityRepository) GetLatestByWorkerAndRole(ctx context.Context, w
 }
 
 type MockWorkerService struct {
-	workers map[string]*worker.Worker
+	staff map[string]*staff.Staff
 }
 
 func NewMockWorkerService() *MockWorkerService {
-	return &MockWorkerService{workers: make(map[string]*worker.Worker)}
+	return &MockWorkerService{staff: make(map[string]*staff.Staff)}
 }
 
-func (m *MockWorkerService) GetWorkerByPhone(ctx context.Context, phone, companyCode string) (*worker.Worker, error) {
-	for _, w := range m.workers {
-		if w.PhoneNumber == phone && w.CompanyCode == companyCode {
-			return w, nil
+func (m *MockWorkerService) GetStaffByPhone(ctx context.Context, phone, companyCode string) (*staff.Staff, error) {
+	for _, s := range m.staff {
+		if s.PhoneNumber == phone && s.CompanyCode == companyCode {
+			return s, nil
 		}
 	}
-	return nil, fmt.Errorf("%w: worker with phone %s", shared.ErrNotFound, phone)
+	return nil, fmt.Errorf("%w: staff with phone %s", shared.ErrNotFound, phone)
 }
 
 // --- Mock helpers for CompanyService ---
@@ -173,9 +173,9 @@ func TestWebhookService_ProcessWebhook_CheckIn(t *testing.T) {
 	activityRepo := NewMockActivityRepository()
 	workerService := NewMockWorkerService()
 
-	w, _ := worker.NewWorker("worker-1", "+1234567890", "John Doe", "ACME")
-	w.AssignRole("CLEANING")
-	workerService.workers["worker-1"] = w
+	s, _ := staff.NewStaff("staff-1", "+1234567890", "John Doe", "ACME")
+	s.AssignRole("CLEANING")
+	workerService.staff["staff-1"] = s
 
 	mockATRepo := NewMockActionTypeRepository()
 	companySvc := company.NewCompanyService(NewMockCompanyRepo(), mockATRepo)
@@ -221,7 +221,7 @@ func TestWebhookService_ProcessWebhook_WorkerNotFound(t *testing.T) {
 
 	_, err := service.ProcessWebhook(ctx, payload)
 	if err == nil {
-		t.Error("expected error for worker not found")
+		t.Error("expected error for staff not found")
 	}
 }
 
@@ -229,10 +229,10 @@ func TestWebhookService_ProcessWebhook_InactiveWorker(t *testing.T) {
 	activityRepo := NewMockActivityRepository()
 	workerService := NewMockWorkerService()
 
-	w, _ := worker.NewWorker("worker-1", "+1234567890", "John Doe", "ACME")
-	w.AssignRole("CLEANING")
-	w.Deactivate()
-	workerService.workers["worker-1"] = w
+	s, _ := staff.NewStaff("staff-1", "+1234567890", "John Doe", "ACME")
+	s.AssignRole("CLEANING")
+	s.Deactivate()
+	workerService.staff["staff-1"] = s
 
 	mockATRepo := NewMockActionTypeRepository()
 	companySvc := company.NewCompanyService(NewMockCompanyRepo(), mockATRepo)
@@ -248,7 +248,7 @@ func TestWebhookService_ProcessWebhook_InactiveWorker(t *testing.T) {
 
 	_, err := service.ProcessWebhook(ctx, payload)
 	if err == nil {
-		t.Error("expected error for inactive worker")
+		t.Error("expected error for inactive staff")
 	}
 }
 
@@ -256,9 +256,9 @@ func TestWebhookService_ProcessWebhook_CustomKeyword(t *testing.T) {
 	activityRepo := NewMockActivityRepository()
 	workerService := NewMockWorkerService()
 
-	w, _ := worker.NewWorker("worker-1", "+1234567890", "John Doe", "ACME")
-	w.AssignRole("CLEANING")
-	workerService.workers["worker-1"] = w
+	s, _ := staff.NewStaff("staff-1", "+1234567890", "John Doe", "ACME")
+	s.AssignRole("CLEANING")
+	workerService.staff["staff-1"] = s
 
 	mockATRepo := NewMockActionTypeRepository()
 	mockATRepo.actionTypes = []company.CompanyActionType{
@@ -291,9 +291,9 @@ func TestWebhookService_ProcessWebhook_CustomActionType(t *testing.T) {
 	activityRepo := NewMockActivityRepository()
 	workerService := NewMockWorkerService()
 
-	w, _ := worker.NewWorker("worker-1", "+1234567890", "John Doe", "ACME")
-	w.AssignRole("CLEANING")
-	workerService.workers["worker-1"] = w
+	s, _ := staff.NewStaff("staff-1", "+1234567890", "John Doe", "ACME")
+	s.AssignRole("CLEANING")
+	workerService.staff["staff-1"] = s
 
 	mockATRepo := NewMockActionTypeRepository()
 	mockATRepo.actionTypes = []company.CompanyActionType{

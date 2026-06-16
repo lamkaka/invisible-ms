@@ -16,7 +16,7 @@ import (
 	"github.com/lamkaka/invisible-ms/internal/company"
 	"github.com/lamkaka/invisible-ms/internal/dashboard"
 	"github.com/lamkaka/invisible-ms/internal/shared"
-	"github.com/lamkaka/invisible-ms/internal/worker"
+	"github.com/lamkaka/invisible-ms/internal/staff"
 )
 
 func main() {
@@ -38,20 +38,20 @@ func main() {
 	// Initialize repositories
 	companyRepo := company.NewSpannerCompanyRepository(spannerClient)
 	companyActionTypeRepo := company.NewSpannerCompanyActionTypeRepository(spannerClient)
-	workerRepo := worker.NewSpannerWorkerRepository(spannerClient)
+	staffRepo := staff.NewSpannerStaffRepository(spannerClient)
 	activityRepo := activity.NewSpannerActivityRepository(spannerClient)
 	dashboardRepo := dashboard.NewSpannerDashboardRepository(spannerClient)
 
 	// Initialize services
 	companyService := company.NewCompanyService(companyRepo, companyActionTypeRepo)
-	workerService := worker.NewWorkerService(workerRepo, companyService)
-	activityWebhookService := activity.NewWebhookService(activityRepo, workerService, companyService)
+	staffService := staff.NewStaffService(staffRepo, companyService)
+	activityWebhookService := activity.NewWebhookService(activityRepo, staffService, companyService)
 	activitySessionService := activity.NewSessionService(activityRepo, companyService)
 	dashboardService := dashboard.NewDashboardService(dashboardRepo)
 
 	// Initialize handlers
 	companyHandler := company.NewCompanyHandler(companyService)
-	workerHandler := worker.NewWorkerHandler(workerService)
+	staffHandler := staff.NewStaffHandler(staffService)
 	activityHandler := activity.NewActivityHandler(activityWebhookService, activitySessionService, cfg.WebhookSecret)
 	dashboardAPIHandler := dashboard.NewDashboardAPIHandler(dashboardService)
 
@@ -67,7 +67,7 @@ func main() {
 
 	// Register routes
 	companyHandler.RegisterRoutes(router)
-	workerHandler.RegisterRoutes(router)
+	staffHandler.RegisterRoutes(router)
 	activityHandler.RegisterRoutes(router)
 	dashboardAPIHandler.RegisterRoutes(router)
 	dashboardWebHandler.RegisterRoutes(router)

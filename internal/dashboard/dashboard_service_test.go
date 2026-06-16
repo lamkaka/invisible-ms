@@ -7,20 +7,20 @@ import (
 )
 
 type MockDashboardRepository struct {
-	currentlyWorking []ActiveWorker
+	currentlyWorking []ActiveStaff
 	checkedInToday   int
 	totalHoursToday  float64
 }
 
 func NewMockDashboardRepository() *MockDashboardRepository {
 	return &MockDashboardRepository{
-		currentlyWorking: []ActiveWorker{},
+		currentlyWorking: []ActiveStaff{},
 		checkedInToday:   0,
 		totalHoursToday:  0,
 	}
 }
 
-func (m *MockDashboardRepository) GetCurrentlyWorking(ctx context.Context, companyCode string) ([]ActiveWorker, error) {
+func (m *MockDashboardRepository) GetCurrentlyWorking(ctx context.Context, companyCode string) ([]ActiveStaff, error) {
 	return m.currentlyWorking, nil
 }
 
@@ -40,8 +40,8 @@ func (m *MockDashboardRepository) GetCostByRole(ctx context.Context, companyCode
 	return make(map[string]float64), nil
 }
 
-func (m *MockDashboardRepository) GetWorkerStats(ctx context.Context, companyCode string, from, to time.Time) ([]WorkerStats, error) {
-	return []WorkerStats{}, nil
+func (m *MockDashboardRepository) GetStaffStats(ctx context.Context, companyCode string, from, to time.Time) ([]StaffStats, error) {
+	return []StaffStats{}, nil
 }
 
 func (m *MockDashboardRepository) GetActionTypeBreakdown(ctx context.Context, companyCode string, from, to time.Time) ([]ActionTypeCount, error) {
@@ -50,8 +50,8 @@ func (m *MockDashboardRepository) GetActionTypeBreakdown(ctx context.Context, co
 
 func TestDashboardService_GetStats(t *testing.T) {
 	repo := NewMockDashboardRepository()
-	repo.currentlyWorking = []ActiveWorker{
-		{WorkerID: "w1", WorkerName: "John", Role: "CLEANING", CheckIn: time.Now().Add(-2 * time.Hour), Hours: 2},
+	repo.currentlyWorking = []ActiveStaff{
+		{StaffID: "w1", StaffName: "John", Role: "CLEANING", CheckIn: time.Now().Add(-2 * time.Hour), Hours: 2},
 	}
 	repo.checkedInToday = 5
 	repo.totalHoursToday = 12.5

@@ -1,4 +1,4 @@
-package worker
+package staff
 
 import (
 	"encoding/json"
@@ -10,38 +10,38 @@ import (
 	"github.com/lamkaka/invisible-ms/internal/shared"
 )
 
-type WorkerHandler struct {
-	service *WorkerService
+type StaffHandler struct {
+	service *StaffService
 }
 
-func NewWorkerHandler(service *WorkerService) *WorkerHandler {
-	return &WorkerHandler{service: service}
+func NewStaffHandler(service *StaffService) *StaffHandler {
+	return &StaffHandler{service: service}
 }
 
-func (h *WorkerHandler) RegisterRoutes(router *mux.Router) {
-	router.HandleFunc("/api/workers", h.ListWorkers).Methods("GET")
-	router.HandleFunc("/api/workers", h.CreateWorker).Methods("POST")
-	router.HandleFunc("/api/workers/{id}", h.GetWorker).Methods("GET")
-	router.HandleFunc("/api/workers/{id}/roles", h.AssignRole).Methods("POST")
-	router.HandleFunc("/api/workers/{id}/roles/{role}", h.UnassignRole).Methods("DELETE")
+func (h *StaffHandler) RegisterRoutes(router *mux.Router) {
+	router.HandleFunc("/api/staff", h.ListStaff).Methods("GET")
+	router.HandleFunc("/api/staff", h.CreateStaff).Methods("POST")
+	router.HandleFunc("/api/staff/{id}", h.GetStaff).Methods("GET")
+	router.HandleFunc("/api/staff/{id}/roles", h.AssignRole).Methods("POST")
+	router.HandleFunc("/api/staff/{id}/roles/{role}", h.UnassignRole).Methods("DELETE")
 }
 
-func (h *WorkerHandler) ListWorkers(w http.ResponseWriter, r *http.Request) {
+func (h *StaffHandler) ListStaff(w http.ResponseWriter, r *http.Request) {
 	companyCode := r.URL.Query().Get("company_code")
 
-	workers, err := h.service.ListWorkers(r.Context(), companyCode)
+	staff, err := h.service.ListStaff(r.Context(), companyCode)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(workers)
+	json.NewEncoder(w).Encode(staff)
 }
 
-func (h *WorkerHandler) CreateWorker(w http.ResponseWriter, r *http.Request) {
+func (h *StaffHandler) CreateStaff(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		WorkerID    string   `json:"worker_id"`
+		StaffID     string   `json:"staff_id"`
 		PhoneNumber string   `json:"phone_number"`
 		Name        string   `json:"name"`
 		CompanyCode string   `json:"company_code"`
@@ -53,7 +53,7 @@ func (h *WorkerHandler) CreateWorker(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	worker, err := h.service.CreateWorker(r.Context(), req.WorkerID, req.PhoneNumber, req.Name, req.CompanyCode, req.Roles)
+	staff, err := h.service.CreateStaff(r.Context(), req.StaffID, req.PhoneNumber, req.Name, req.CompanyCode, req.Roles)
 	if err != nil {
 		if shared.IsAlreadyExists(err) {
 			http.Error(w, err.Error(), http.StatusConflict)
@@ -65,14 +65,14 @@ func (h *WorkerHandler) CreateWorker(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(worker)
+	json.NewEncoder(w).Encode(staff)
 }
 
-func (h *WorkerHandler) GetWorker(w http.ResponseWriter, r *http.Request) {
+func (h *StaffHandler) GetStaff(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 
-	worker, err := h.service.GetWorker(r.Context(), id)
+	staff, err := h.service.GetStaff(r.Context(), id)
 	if err != nil {
 		if shared.IsNotFound(err) {
 			http.Error(w, err.Error(), http.StatusNotFound)
@@ -83,10 +83,10 @@ func (h *WorkerHandler) GetWorker(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(worker)
+	json.NewEncoder(w).Encode(staff)
 }
 
-func (h *WorkerHandler) AssignRole(w http.ResponseWriter, r *http.Request) {
+func (h *StaffHandler) AssignRole(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 
@@ -116,7 +116,7 @@ func (h *WorkerHandler) AssignRole(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
-func (h *WorkerHandler) UnassignRole(w http.ResponseWriter, r *http.Request) {
+func (h *StaffHandler) UnassignRole(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 	role := vars["role"]

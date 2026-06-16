@@ -15,17 +15,17 @@ const (
 )
 
 var (
-	ErrInvalidWorkerID = errors.New("worker ID cannot be empty")
-	ErrInvalidCompany  = errors.New("company code cannot be empty")
-	ErrInvalidRole     = errors.New("role cannot be empty")
-	ErrInvalidMessage  = errors.New("invalid message format")
-	ErrUnknownAction   = errors.New("unknown action")
-	ErrRoleRequired    = errors.New("role must be specified when worker has multiple roles")
+	ErrInvalidStaffID = errors.New("staff ID cannot be empty")
+	ErrInvalidCompany = errors.New("company code cannot be empty")
+	ErrInvalidRole    = errors.New("role cannot be empty")
+	ErrInvalidMessage = errors.New("invalid message format")
+	ErrUnknownAction  = errors.New("unknown action")
+	ErrRoleRequired   = errors.New("role must be specified when staff has multiple roles")
 )
 
 type ActivityLog struct {
 	LogID       string                 `json:"log_id"`
-	WorkerID    string                 `json:"worker_id"`
+	StaffID     string                 `json:"staff_id"`
 	CompanyCode string                 `json:"company_code"`
 	Role        string                 `json:"role"`
 	ActionType  string                 `json:"action_type"`
@@ -33,9 +33,9 @@ type ActivityLog struct {
 	Metadata    map[string]interface{} `json:"metadata,omitempty"`
 }
 
-func NewActivityLog(logID, workerID, companyCode, role string, actionType string, timestamp time.Time) (*ActivityLog, error) {
-	if workerID == "" {
-		return nil, ErrInvalidWorkerID
+func NewActivityLog(logID, staffID, companyCode, role string, actionType string, timestamp time.Time) (*ActivityLog, error) {
+	if staffID == "" {
+		return nil, ErrInvalidStaffID
 	}
 	if companyCode == "" {
 		return nil, ErrInvalidCompany
@@ -46,7 +46,7 @@ func NewActivityLog(logID, workerID, companyCode, role string, actionType string
 
 	return &ActivityLog{
 		LogID:       logID,
-		WorkerID:    workerID,
+		StaffID:     staffID,
 		CompanyCode: companyCode,
 		Role:        role,
 		ActionType:  actionType,

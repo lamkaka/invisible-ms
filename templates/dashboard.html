@@ -79,31 +79,31 @@
             </div>
         </section>
 
-        <!-- Active Workers Table -->
+        <!-- Active Staff Table -->
         <section class="section" x-show="stats?.today_overview?.active_workers?.length > 0">
-            <h2 class="section-title">Active Workers</h2>
+            <h2 class="section-title">Active Staff</h2>
             <div class="table-container">
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>Worker</th>
+                            <th>Staff</th>
                             <th>Role</th>
                             <th>Check-in Time</th>
                             <th>Hours Elapsed</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <template x-for="worker in stats?.today_overview?.active_workers ?? []" :key="worker.worker_id">
+                        <template x-for="staffMember in stats?.today_overview?.active_workers ?? []" :key="staffMember.staff_id">
                             <tr>
                                 <td>
-                                    <div class="worker-info">
-                                        <span class="worker-name" x-text="worker.worker_name"></span>
+                                    <div class="staff-info">
+                                        <span class="staff-name" x-text="staffMember.staff_name"></span>
                                     </div>
                                 </td>
-                                <td><span class="role-badge" x-text="worker.role"></span></td>
-                                <td x-text="formatTime(worker.check_in)"></td>
+                                <td><span class="role-badge" x-text="staffMember.role"></span></td>
+                                <td x-text="formatTime(staffMember.check_in)"></td>
                                 <td>
-                                    <span class="hours-value" x-text="formatHours(worker.hours)"></span>
+                                    <span class="hours-value" x-text="formatHours(staffMember.hours)"></span>
                                 </td>
                             </tr>
                         </template>
@@ -178,32 +178,32 @@
             </div>
         </section>
 
-        <!-- Worker Activity Section -->
+        <!-- Staff Activity Section -->
         <section class="section">
-            <h2 class="section-title">Worker Activity</h2>
+            <h2 class="section-title">Staff Activity</h2>
             <div class="activity-grid">
                 <div class="activity-card">
                     <h3 class="activity-title">Average Hours</h3>
-                    <div class="activity-value" x-text="formatHours(stats?.worker_activity?.average_hours ?? 0)"></div>
-                    <p class="activity-note">per worker today</p>
+                    <div class="activity-value" x-text="formatHours(stats?.staff_activity?.average_hours ?? 0)"></div>
+                    <p class="activity-note">per staff member today</p>
                 </div>
 
                 <div class="activity-card">
-                    <h3 class="activity-title">Most Active Workers</h3>
-                    <div class="most-active-list" x-show="stats?.worker_activity?.most_active_workers?.length > 0">
-                        <template x-for="(worker, index) in stats?.worker_activity?.most_active_workers ?? []" :key="worker.worker_id">
+                    <h3 class="activity-title">Most Active Staff</h3>
+                    <div class="most-active-list" x-show="stats?.staff_activity?.most_active_staff?.length > 0">
+                        <template x-for="(staffMember, index) in stats?.staff_activity?.most_active_staff ?? []" :key="staffMember.staff_id">
                             <div class="most-active-item">
                                 <span class="rank" x-text="index + 1"></span>
-                                <span class="worker-name" x-text="worker.worker_name"></span>
-                                <span class="worker-hours" x-text="formatHours(worker.hours)"></span>
+                                <span class="staff-name" x-text="staffMember.staff_name"></span>
+                                <span class="staff-hours" x-text="formatHours(staffMember.hours)"></span>
                             </div>
                         </template>
                     </div>
-                    <p class="no-data" x-show="!stats?.worker_activity?.most_active_workers?.length">No data available</p>
+                    <p class="no-data" x-show="!stats?.staff_activity?.most_active_staff?.length">No data available</p>
                 </div>
 
                 <!-- Overtime Alerts -->
-                <div class="activity-card activity-card--alert" x-show="stats?.worker_activity?.overtime_alerts?.length > 0">
+                <div class="activity-card activity-card--alert" x-show="stats?.staff_activity?.overtime_alerts?.length > 0">
                     <h3 class="activity-title">
                         <svg class="alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
@@ -213,9 +213,9 @@
                         Overtime Alerts
                     </h3>
                     <div class="alerts-list">
-                        <template x-for="alert in stats?.worker_activity?.overtime_alerts ?? []" :key="alert.worker_id">
+                        <template x-for="alert in stats?.staff_activity?.overtime_alerts ?? []" :key="alert.staff_id">
                             <div class="alert-item" :class="'alert-item--' + alert.severity">
-                                <span class="alert-worker" x-text="alert.worker_name"></span>
+                                <span class="alert-staff" x-text="alert.staff_name"></span>
                                 <span class="alert-hours" x-text="formatHours(alert.hours) + ' logged'"></span>
                                 <span class="alert-reason" x-text="alert.reason"></span>
                             </div>

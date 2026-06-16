@@ -1,8 +1,8 @@
-# IMS - Hourly Worker Management System
+# IMS - Hourly Staff Management System
 
 ## Overview
 
-IMS is a multi-tenant HR application for managing hourly workers (freelancers, contractors, part-time, shift workers). Workers check in/out via WhatsApp using keyword commands. The system tracks activity logs, computes hours and costs per role, and provides a management dashboard.
+IMS is a multi-tenant HR application for managing hourly staff (freelancers, contractors, part-time, shift staff). Workers check in/out via WhatsApp using keyword commands. The system tracks activity logs, computes hours and costs per role, and provides a management dashboard.
 
 ## Tech Stack
 
@@ -16,10 +16,10 @@ IMS is a multi-tenant HR application for managing hourly workers (freelancers, c
 
 ### 1. Domain-Driven Design (DDD)
 
-- **Bounded contexts** are implemented as independent cells: `company`, `worker`, `activity`, `dashboard`
-- **Aggregates** are the consistency boundaries: `Company`, `Worker`, `ActivityLog`
+- **Bounded contexts** are implemented as independent cells: `company`, `staff`, `activity`, `dashboard`
+- **Aggregates** are the consistency boundaries: `Company`, `Staff`, `ActivityLog`
 - **Value objects** are immutable and have no identity: `Role` (name + hourly rate)
-- **Domain events** capture significant occurrences: `WorkerCheckedIn`, `WorkerCheckedOut`
+- **Domain events** capture significant occurrences: `StaffCheckedIn`, `StaffCheckedOut`
 
 ### 2. Clean Architecture Layers
 
@@ -48,9 +48,9 @@ Cells communicate through port interfaces, not by sharing internal state.
 
 **Cell dependencies:**
 - `company` → standalone
-- `worker` → depends on `company` (validates company code and roles exist)
-- `activity` → depends on `worker` (validates worker exists and has the role)
-- `dashboard` → depends on `activity`, `worker`, `company` (read-only aggregation)
+- `staff` → depends on `company` (validates company code and roles exist)
+- `activity` → depends on `staff` (validates staff exists and has the role)
+- `dashboard` → depends on `activity`, `staff`, `company` (read-only aggregation)
 
 ## File Naming Convention
 
@@ -88,11 +88,11 @@ ims/
 │   │   ├── company_repository.go    # Port interface + Spanner adapter
 │   │   └── company_handler.go       # REST endpoints for company management
 │   │
-│   ├── worker/
-│   │   ├── worker_domain.go         # Worker aggregate, role assignment rules, validation
-│   │   ├── worker_service.go        # Orchestration
-│   │   ├── worker_repository.go     # Port interface + Spanner adapter
-│   │   └── worker_handler.go        # REST endpoints for worker management
+│   ├── staff/
+│   │   ├── staff_domain.go         # Staff aggregate, role assignment rules, validation
+│   │   ├── staff_service.go        # Orchestration
+│   │   ├── staff_repository.go     # Port interface + Spanner adapter
+│   │   └── staff_handler.go        # REST endpoints for staff management
 │   │
 │   ├── activity/
 │   │   ├── activity_domain.go       # ActivityLog aggregate, ActionType enum, session pairing logic,
@@ -119,11 +119,11 @@ ims/
 ├── templates/
 │   ├── layout.html                  # Base HTML template
 │   ├── dashboard.html               # Dashboard page
-│   └── workers.html                 # Worker management page
+│   └── staff.html                 # Staff management page
 │
 ├── migrations/
 │   ├── 001_create_companies.sql
-│   ├── 002_create_workers.sql
+│   ├── 002_create_staff.sql
 │   └── 003_create_activity_logs.sql
 │
 ├── go.mod
@@ -143,8 +143,8 @@ ims/
 - `name` (string) — e.g., "CLEANING", "DELIVERY"
 - `hourly_rate` (decimal) — cost per hour for this role
 
-### Worker (Aggregate Root)
-- `worker_id` (string, UUID)
+### Staff (Aggregate Root)
+- `staff_id` (string, UUID)
 - `phone_number` (string) — unique within company
 - `name` (string)
 - `company_code` (string) — FK to Company
@@ -153,32 +153,32 @@ ims/
 
 ### ActivityLog (Aggregate Root)
 - `log_id` (string, UUID)
-- `worker_id` (string)
+- `staff_id` (string)
 - `company_code` (string)
 - `role` (string) — the role being worked
 - `action_type` (enum) — CHECK_IN, CHECK_OUT, BREAK_START, BREAK_END, OVERTIME_START, etc.
 - `timestamp` (timestamp)
 - `metadata` (JSON, optional) — extra context for future action types
 
-**Session computation:** A "work session" is derived by pairing the most recent CHECK_IN with the next CHECK_OUT for the same worker + role. Duration and cost are computed from the pair.
+**Session computation:** A "work session" is derived by pairing the most recent CHECK_IN with the next CHECK_OUT for the same staff + role. Duration and cost are computed from the pair.
 
 ## Business Rules
 
-### Worker Identification
+### Staff Identification
 - Workers are identified by `phone_number` + `company_code`
 - The webhook payload includes both fields
 
 ### Check-in/Check-out Flow
-1. Worker sends WhatsApp message (e.g., "IN CLEANING" or "OUT")
+1. Staff sends WhatsApp message (e.g., "IN CLEANING" or "OUT")
 2. External gateway (Waha) sends webhook to `POST /webhook/message` with `{ phone, message, company_code }`
 3. App parses the message:
    - Extracts action (IN/OUT) and optional role
-   - If worker has only one role, "IN" is sufficient
-   - If worker has multiple roles, role must be specified (e.g., "IN CLEANING")
+   - If staff has only one role, "IN" is sufficient
+   - If staff has multiple roles, role must be specified (e.g., "IN CLEANING")
 4. App validates:
-   - Worker exists and is active
-   - Role is assigned to the worker
-   - For CHECK_OUT: worker has an active CHECK_IN for this role
+   - Staff exists and is active
+   - Role is assigned to the staff
+   - For CHECK_OUT: staff has an active CHECK_IN for this role
 5. App creates an `ActivityLog` record with the appropriate action type
 6. App responds with confirmation (optional, via webhook response)
 
@@ -186,7 +186,7 @@ ims/
 - Keywords are case-insensitive
 - Format: `{ACTION} [ROLE]`
 - Valid actions: `IN`, `OUT` (extensible for BREAK, OVERTIME, etc.)
-- Role is optional if worker has only one assigned role
+- Role is optional if staff has only one assigned role
 - Invalid messages return an error response
 
 ### Cost Calculation
@@ -205,11 +205,11 @@ The management dashboard displays:
 
 ### Cost Tracking
 - Total labor cost: today, this week, this month
-- Breakdown by company, role, or worker
+- Breakdown by company, role, or staff
 
-### Worker Activity
-- Most active workers
-- Average hours per worker
+### Staff Activity
+- Most active staff
+- Average hours per staff
 - Overtime alerts (configurable threshold)
 
 ## API Endpoints
@@ -225,22 +225,22 @@ The management dashboard displays:
 - `POST /api/companies/:code/roles` — add role to company
 - `DELETE /api/companies/:code/roles/:role` — remove role from company
 
-### Worker Management
-- `GET /api/workers` — list workers (filterable by company)
-- `POST /api/workers` — create worker
-- `GET /api/workers/:id` — get worker details
-- `PUT /api/workers/:id` — update worker
-- `POST /api/workers/:id/roles` — assign role to worker
-- `DELETE /api/workers/:id/roles/:role` — unassign role from worker
+### Staff Management
+- `GET /api/staff` — list staff (filterable by company)
+- `POST /api/staff` — create staff
+- `GET /api/staff/:id` — get staff details
+- `PUT /api/staff/:id` — update staff
+- `POST /api/staff/:id/roles` — assign role to staff
+- `DELETE /api/staff/:id/roles/:role` — unassign role from staff
 
 ### Activity
-- `GET /api/activities` — list activity logs (filterable by worker, company, date range)
+- `GET /api/activities` — list activity logs (filterable by staff, company, date range)
 - `GET /api/activities/sessions` — list computed work sessions
 
 ### Dashboard
 - `GET /api/dashboard/stats` — aggregated stats for dashboard
 - `GET /dashboard` — HTML dashboard page
-- `GET /workers` — HTML worker management page
+- `GET /staff` — HTML staff management page
 
 ## Database Schema (Cloud Spanner)
 
@@ -264,33 +264,33 @@ CREATE TABLE company_roles (
 
 ### Workers Table
 ```sql
-CREATE TABLE workers (
-  worker_id STRING(36) NOT NULL,
+CREATE TABLE staff (
+  staff_id STRING(36) NOT NULL,
   company_code STRING(50) NOT NULL,
   phone_number STRING(20) NOT NULL,
   name STRING(200) NOT NULL,
   is_active BOOL NOT NULL DEFAULT TRUE,
-) PRIMARY KEY (worker_id);
+) PRIMARY KEY (staff_id);
 
-CREATE INDEX workers_by_company ON workers(company_code);
-CREATE UNIQUE INDEX workers_by_phone ON workers(company_code, phone_number);
+CREATE INDEX staff_by_company ON staff(company_code);
+CREATE UNIQUE INDEX staff_by_phone ON staff(company_code, phone_number);
 ```
 
-### Worker Roles Table
+### Staff Roles Table
 ```sql
-CREATE TABLE worker_roles (
-  worker_id STRING(36) NOT NULL,
+CREATE TABLE staff_roles (
+  staff_id STRING(36) NOT NULL,
   role_name STRING(50) NOT NULL,
   company_code STRING(50) NOT NULL,  -- denormalized for interleaving
-) PRIMARY KEY (worker_id, role_name),
-  INTERLEAVE IN PARENT workers ON DELETE CASCADE;
+) PRIMARY KEY (staff_id, role_name),
+  INTERLEAVE IN PARENT staff ON DELETE CASCADE;
 ```
 
 ### Activity Logs Table
 ```sql
 CREATE TABLE activity_logs (
   log_id STRING(36) NOT NULL,
-  worker_id STRING(36) NOT NULL,
+  staff_id STRING(36) NOT NULL,
   company_code STRING(50) NOT NULL,
   role STRING(50) NOT NULL,
   action_type STRING(50) NOT NULL,
@@ -298,7 +298,7 @@ CREATE TABLE activity_logs (
   metadata JSON,
 ) PRIMARY KEY (log_id);
 
-CREATE INDEX activity_logs_by_worker ON activity_logs(worker_id, timestamp);
+CREATE INDEX activity_logs_by_staff ON activity_logs(staff_id, timestamp);
 CREATE INDEX activity_logs_by_company ON activity_logs(company_code, timestamp);
 CREATE INDEX activity_logs_by_action ON activity_logs(company_code, action_type, timestamp);
 ```
@@ -331,7 +331,7 @@ CREATE INDEX activity_logs_by_action ON activity_logs(company_code, action_type,
 **Use ReadWriteTransaction for:**
 - Multi-table operations (e.g., insert parent + children)
 - Operations that must be atomic (e.g., check-out validation)
-- Update operations that modify related entities (e.g., worker + roles)
+- Update operations that modify related entities (e.g., staff + roles)
 
 **Example pattern:**
 ```go
@@ -364,8 +364,8 @@ _, err := r.client.ReadWriteTransaction(ctx, func(ctx context.Context, txn *span
 
 ### Role Validation
 - Workers can only be assigned roles that exist in the company's `company_roles` table
-- `WorkerService` depends on `CompanyService` to validate roles
-- Validation happens in `CreateWorker` and `AssignRole` methods
+- `StaffService` depends on `CompanyService` to validate roles
+- Validation happens in `CreateStaff` and `AssignRole` methods
 - Prevents phantom roles that would break cost calculations
 
 ### Testing
@@ -406,7 +406,7 @@ For the initial MVP:
 - No authentication (add later)
 - WhatsApp integration via external webhook (Waha layer is external)
 - Basic dashboard with today's stats
-- Company and worker management via REST API
+- Company and staff management via REST API
 - Check-in/check-out via WhatsApp keywords
 
 ## Future Enhancements
@@ -416,4 +416,4 @@ For the initial MVP:
 - Export reports (CSV, PDF)
 - Email notifications
 - Mobile app for managers
-- Worker self-service portal (view own hours)
+- Staff self-service portal (view own hours)

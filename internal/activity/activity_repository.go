@@ -13,9 +13,9 @@ import (
 
 type ActivityRepository interface {
 	Create(ctx context.Context, log *ActivityLog) error
-	GetByWorker(ctx context.Context, workerID string, from, to time.Time) ([]*ActivityLog, error)
+	GetByWorker(ctx context.Context, staffID string, from, to time.Time) ([]*ActivityLog, error)
 	GetByCompany(ctx context.Context, companyCode string, from, to time.Time) ([]*ActivityLog, error)
-	GetLatestByWorkerAndRole(ctx context.Context, workerID, role string, actionType string) (*ActivityLog, error)
+	GetLatestByWorkerAndRole(ctx context.Context, staffID, role string, actionType string) (*ActivityLog, error)
 	CheckOutWithValidation(ctx context.Context, log *ActivityLog) error
 }
 
@@ -29,8 +29,8 @@ func NewSpannerActivityRepository(client *spanner.Client) *SpannerActivityReposi
 
 func (r *SpannerActivityRepository) Create(ctx context.Context, log *ActivityLog) error {
 	m := spanner.Insert("activity_logs",
-		[]string{"log_id", "worker_id", "company_code", "role", "action_type", "timestamp"},
-		[]interface{}{log.LogID, log.WorkerID, log.CompanyCode, log.Role, log.ActionType, log.Timestamp},
+		[]string{"log_id", "staff_id", "company_code", "role", "action_type", "timestamp"},
+		[]interface{}{log.LogID, log.StaffID, log.CompanyCode, log.Role, log.ActionType, log.Timestamp},
 	)
 
 	_, err := r.client.Apply(ctx, []*spanner.Mutation{m})
@@ -45,13 +45,13 @@ func (r *SpannerActivityRepository) CheckOutWithValidation(ctx context.Context, 
 	_, err := r.client.ReadWriteTransaction(ctx, func(txnCtx context.Context, txn *spanner.ReadWriteTransaction) error {
 		// Query latest CHECK_IN within the transaction
 		checkInStmt := spanner.Statement{
-			SQL: `SELECT log_id, worker_id, company_code, role, action_type, timestamp 
+			SQL: `SELECT log_id, staff_id, company_code, role, action_type, timestamp 
 			      FROM activity_logs 
-			      WHERE worker_id = @worker AND role = @role AND action_type = @action
+			      WHERE staff_id = @staff AND role = @role AND action_type = @action
 			      ORDER BY timestamp DESC
 			      LIMIT 1`,
 			Params: map[string]interface{}{
-				"worker": log.WorkerID,
+				"staff":  log.StaffID,
 				"role":   log.Role,
 				"action": ActionCheckIn,
 			},
@@ -74,13 +74,13 @@ func (r *SpannerActivityRepository) CheckOutWithValidation(ctx context.Context, 
 
 		// Query latest CHECK_OUT within the transaction
 		checkOutStmt := spanner.Statement{
-			SQL: `SELECT log_id, worker_id, company_code, role, action_type, timestamp 
+			SQL: `SELECT log_id, staff_id, company_code, role, action_type, timestamp 
 			      FROM activity_logs 
-			      WHERE worker_id = @worker AND role = @role AND action_type = @action
+			      WHERE staff_id = @staff AND role = @role AND action_type = @action
 			      ORDER BY timestamp DESC
 			      LIMIT 1`,
 			Params: map[string]interface{}{
-				"worker": log.WorkerID,
+				"staff":  log.StaffID,
 				"role":   log.Role,
 				"action": ActionCheckOut,
 			},
@@ -103,8 +103,8 @@ func (r *SpannerActivityRepository) CheckOutWithValidation(ctx context.Context, 
 
 		// Insert the CHECK_OUT log atomically
 		m := spanner.Insert("activity_logs",
-			[]string{"log_id", "worker_id", "company_code", "role", "action_type", "timestamp"},
-			[]interface{}{log.LogID, log.WorkerID, log.CompanyCode, log.Role, log.ActionType, log.Timestamp},
+			[]string{"log_id", "staff_id", "company_code", "role", "action_type", "timestamp"},
+			[]interface{}{log.LogID, log.StaffID, log.CompanyCode, log.Role, log.ActionType, log.Timestamp},
 		)
 		return txn.BufferWrite([]*spanner.Mutation{m})
 	})
@@ -112,16 +112,16 @@ func (r *SpannerActivityRepository) CheckOutWithValidation(ctx context.Context, 
 	return err
 }
 
-func (r *SpannerActivityRepository) GetByWorker(ctx context.Context, workerID string, from, to time.Time) ([]*ActivityLog, error) {
+func (r *SpannerActivityRepository) GetByWorker(ctx context.Context, staffID string, from, to time.Time) ([]*ActivityLog, error) {
 	stmt := spanner.Statement{
-		SQL: `SELECT log_id, worker_id, company_code, role, action_type, timestamp 
+		SQL: `SELECT log_id, staff_id, company_code, role, action_type, timestamp 
 		      FROM activity_logs 
-		      WHERE worker_id = @worker AND timestamp BETWEEN @from AND @to
+		      WHERE staff_id = @staff AND timestamp BETWEEN @from AND @to
 		      ORDER BY timestamp DESC`,
 		Params: map[string]interface{}{
-			"worker": workerID,
-			"from":   from,
-			"to":     to,
+			"staff": staffID,
+			"from":  from,
+			"to":    to,
 		},
 	}
 
@@ -130,7 +130,7 @@ func (r *SpannerActivityRepository) GetByWorker(ctx context.Context, workerID st
 
 func (r *SpannerActivityRepository) GetByCompany(ctx context.Context, companyCode string, from, to time.Time) ([]*ActivityLog, error) {
 	stmt := spanner.Statement{
-		SQL: `SELECT log_id, worker_id, company_code, role, action_type, timestamp 
+		SQL: `SELECT log_id, staff_id, company_code, role, action_type, timestamp 
 		      FROM activity_logs 
 		      WHERE company_code = @company AND timestamp BETWEEN @from AND @to
 		      ORDER BY timestamp DESC`,
@@ -144,15 +144,15 @@ func (r *SpannerActivityRepository) GetByCompany(ctx context.Context, companyCod
 	return r.queryLogs(ctx, stmt)
 }
 
-func (r *SpannerActivityRepository) GetLatestByWorkerAndRole(ctx context.Context, workerID, role string, actionType string) (*ActivityLog, error) {
+func (r *SpannerActivityRepository) GetLatestByWorkerAndRole(ctx context.Context, staffID, role string, actionType string) (*ActivityLog, error) {
 	stmt := spanner.Statement{
-		SQL: `SELECT log_id, worker_id, company_code, role, action_type, timestamp 
-		      FROM activity_logs 
-		      WHERE worker_id = @worker AND role = @role AND action_type = @action
+		SQL: `SELECT log_id, staff_id, company_code, role, action_type, timestamp 
+			      FROM activity_logs 
+			      WHERE staff_id = @staff AND role = @role AND action_type = @action
 		      ORDER BY timestamp DESC
 		      LIMIT 1`,
 		Params: map[string]interface{}{
-			"worker": workerID,
+			"staff":  staffID,
 			"role":   role,
 			"action": actionType,
 		},
@@ -198,16 +198,16 @@ func (r *SpannerActivityRepository) queryLogs(ctx context.Context, stmt spanner.
 }
 
 func (r *SpannerActivityRepository) parseLogRow(row *spanner.Row) (*ActivityLog, error) {
-	var logID, workerID, companyCode, role, actionType string
+	var logID, staffID, companyCode, role, actionType string
 	var timestamp time.Time
 
-	if err := row.Columns(&logID, &workerID, &companyCode, &role, &actionType, &timestamp); err != nil {
+	if err := row.Columns(&logID, &staffID, &companyCode, &role, &actionType, &timestamp); err != nil {
 		return nil, fmt.Errorf("failed to parse activity log: %w", err)
 	}
 
 	return &ActivityLog{
 		LogID:       logID,
-		WorkerID:    workerID,
+		StaffID:     staffID,
 		CompanyCode: companyCode,
 		Role:        role,
 		ActionType:  actionType,

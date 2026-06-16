@@ -1,4 +1,4 @@
-package worker
+package staff
 
 import (
 	"errors"
@@ -7,14 +7,14 @@ import (
 
 var (
 	ErrInvalidPhoneNumber  = errors.New("phone number cannot be empty")
-	ErrInvalidWorkerName   = errors.New("worker name cannot be empty")
+	ErrInvalidStaffName    = errors.New("staff name cannot be empty")
 	ErrInvalidCompanyCode  = errors.New("company code cannot be empty")
 	ErrRoleAlreadyAssigned = errors.New("role already assigned")
 	ErrRoleNotAssigned     = errors.New("role not assigned")
 )
 
-type Worker struct {
-	WorkerID      string   `json:"worker_id"`
+type Staff struct {
+	StaffID       string   `json:"staff_id"`
 	PhoneNumber   string   `json:"phone_number"`
 	Name          string   `json:"name"`
 	CompanyCode   string   `json:"company_code"`
@@ -22,19 +22,19 @@ type Worker struct {
 	IsActive      bool     `json:"is_active"`
 }
 
-func NewWorker(id, phone, name, companyCode string) (*Worker, error) {
+func NewStaff(id, phone, name, companyCode string) (*Staff, error) {
 	if phone == "" {
 		return nil, ErrInvalidPhoneNumber
 	}
 	if name == "" {
-		return nil, ErrInvalidWorkerName
+		return nil, ErrInvalidStaffName
 	}
 	if companyCode == "" {
 		return nil, ErrInvalidCompanyCode
 	}
 
-	return &Worker{
-		WorkerID:      id,
+	return &Staff{
+		StaffID:       id,
 		PhoneNumber:   phone,
 		Name:          name,
 		CompanyCode:   companyCode,
@@ -43,7 +43,7 @@ func NewWorker(id, phone, name, companyCode string) (*Worker, error) {
 	}, nil
 }
 
-func (w *Worker) AssignRole(roleName string) error {
+func (w *Staff) AssignRole(roleName string) error {
 	if w.HasRole(roleName) {
 		return fmt.Errorf("%w: %s", ErrRoleAlreadyAssigned, roleName)
 	}
@@ -52,7 +52,7 @@ func (w *Worker) AssignRole(roleName string) error {
 	return nil
 }
 
-func (w *Worker) UnassignRole(roleName string) error {
+func (w *Staff) UnassignRole(roleName string) error {
 	if !w.HasRole(roleName) {
 		return fmt.Errorf("%w: %s", ErrRoleNotAssigned, roleName)
 	}
@@ -67,7 +67,7 @@ func (w *Worker) UnassignRole(roleName string) error {
 	return nil
 }
 
-func (w *Worker) HasRole(roleName string) bool {
+func (w *Staff) HasRole(roleName string) bool {
 	for _, role := range w.AssignedRoles {
 		if role == roleName {
 			return true
@@ -76,14 +76,14 @@ func (w *Worker) HasRole(roleName string) bool {
 	return false
 }
 
-func (w *Worker) Deactivate() {
+func (w *Staff) Deactivate() {
 	w.IsActive = false
 }
 
-func (w *Worker) Activate() {
+func (w *Staff) Activate() {
 	w.IsActive = true
 }
 
-func (w *Worker) CanCheckIn() bool {
+func (w *Staff) CanCheckIn() bool {
 	return w.IsActive && len(w.AssignedRoles) > 0
 }

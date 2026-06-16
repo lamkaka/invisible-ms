@@ -1,4 +1,4 @@
-package worker
+package staff
 
 import (
 	"context"
@@ -7,53 +7,53 @@ import (
 	"github.com/lamkaka/invisible-ms/internal/company"
 )
 
-type MockWorkerRepository struct {
-	workers map[string]*Worker
+type MockStaffRepository struct {
+	staff map[string]*Staff
 }
 
-func NewMockWorkerRepository() *MockWorkerRepository {
-	return &MockWorkerRepository{workers: make(map[string]*Worker)}
+func NewMockStaffRepository() *MockStaffRepository {
+	return &MockStaffRepository{staff: make(map[string]*Staff)}
 }
 
-func (m *MockWorkerRepository) Create(ctx context.Context, worker *Worker) error {
-	m.workers[worker.WorkerID] = worker
+func (m *MockStaffRepository) Create(ctx context.Context, staff *Staff) error {
+	m.staff[staff.StaffID] = staff
 	return nil
 }
 
-func (m *MockWorkerRepository) GetByID(ctx context.Context, id string) (*Worker, error) {
-	worker, exists := m.workers[id]
+func (m *MockStaffRepository) GetByID(ctx context.Context, id string) (*Staff, error) {
+	staff, exists := m.staff[id]
 	if !exists {
-		return nil, ErrWorkerNotFound
+		return nil, ErrStaffNotFound
 	}
-	return worker, nil
+	return staff, nil
 }
 
-func (m *MockWorkerRepository) GetByPhoneAndCompany(ctx context.Context, phone, companyCode string) (*Worker, error) {
-	for _, w := range m.workers {
-		if w.PhoneNumber == phone && w.CompanyCode == companyCode {
-			return w, nil
+func (m *MockStaffRepository) GetByPhoneAndCompany(ctx context.Context, phone, companyCode string) (*Staff, error) {
+	for _, s := range m.staff {
+		if s.PhoneNumber == phone && s.CompanyCode == companyCode {
+			return s, nil
 		}
 	}
-	return nil, ErrWorkerNotFound
+	return nil, ErrStaffNotFound
 }
 
-func (m *MockWorkerRepository) List(ctx context.Context, companyCode string) ([]*Worker, error) {
-	var workers []*Worker
-	for _, w := range m.workers {
-		if companyCode == "" || w.CompanyCode == companyCode {
-			workers = append(workers, w)
+func (m *MockStaffRepository) List(ctx context.Context, companyCode string) ([]*Staff, error) {
+	var staff []*Staff
+	for _, s := range m.staff {
+		if companyCode == "" || s.CompanyCode == companyCode {
+			staff = append(staff, s)
 		}
 	}
-	return workers, nil
+	return staff, nil
 }
 
-func (m *MockWorkerRepository) Update(ctx context.Context, worker *Worker) error {
-	m.workers[worker.WorkerID] = worker
+func (m *MockStaffRepository) Update(ctx context.Context, staff *Staff) error {
+	m.staff[staff.StaffID] = staff
 	return nil
 }
 
-func (m *MockWorkerRepository) Delete(ctx context.Context, id string) error {
-	delete(m.workers, id)
+func (m *MockStaffRepository) Delete(ctx context.Context, id string) error {
+	delete(m.staff, id)
 	return nil
 }
 
@@ -125,13 +125,13 @@ func (m *MockActionTypeRepository) KeywordExists(ctx context.Context, companyCod
 	return false, nil
 }
 
-func setupTestService() (*WorkerService, *MockWorkerRepository, *MockCompanyRepository) {
-	workerRepo := NewMockWorkerRepository()
+func setupTestService() (*StaffService, *MockStaffRepository, *MockCompanyRepository) {
+	staffRepo := NewMockStaffRepository()
 	companyRepo := NewMockCompanyRepository()
 	atRepo := NewMockActionTypeRepository()
 	companyService := company.NewCompanyService(companyRepo, atRepo)
-	service := NewWorkerService(workerRepo, companyService)
-	return service, workerRepo, companyRepo
+	service := NewStaffService(staffRepo, companyService)
+	return service, staffRepo, companyRepo
 }
 
 func addCompanyWithRoles(companyRepo *MockCompanyRepository, code string, roles map[string]float64) {
@@ -142,60 +142,60 @@ func addCompanyWithRoles(companyRepo *MockCompanyRepository, code string, roles 
 	companyRepo.companies[code] = c
 }
 
-func TestWorkerService_CreateWorker(t *testing.T) {
+func TestStaffService_CreateStaff(t *testing.T) {
 	service, _, companyRepo := setupTestService()
 	addCompanyWithRoles(companyRepo, "ACME", map[string]float64{"CLEANING": 15.0})
 
 	ctx := context.Background()
-	worker, err := service.CreateWorker(ctx, "uuid-1", "+1234567890", "John Doe", "ACME", []string{"CLEANING"})
+	staff, err := service.CreateStaff(ctx, "uuid-1", "+1234567890", "John Doe", "ACME", []string{"CLEANING"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if worker.WorkerID != "uuid-1" {
-		t.Errorf("expected ID uuid-1, got %s", worker.WorkerID)
+	if staff.StaffID != "uuid-1" {
+		t.Errorf("expected ID uuid-1, got %s", staff.StaffID)
 	}
 
-	if !worker.HasRole("CLEANING") {
-		t.Error("expected worker to have CLEANING role")
+	if !staff.HasRole("CLEANING") {
+		t.Error("expected staff to have CLEANING role")
 	}
 }
 
-func TestWorkerService_CreateWorker_RoleNotFound(t *testing.T) {
+func TestStaffService_CreateStaff_RoleNotFound(t *testing.T) {
 	service, _, companyRepo := setupTestService()
 	addCompanyWithRoles(companyRepo, "ACME", map[string]float64{"CLEANING": 15.0})
 
 	ctx := context.Background()
-	_, err := service.CreateWorker(ctx, "uuid-1", "+1234567890", "John Doe", "ACME", []string{"NONEXISTENT"})
+	_, err := service.CreateStaff(ctx, "uuid-1", "+1234567890", "John Doe", "ACME", []string{"NONEXISTENT"})
 	if err == nil {
 		t.Fatal("expected error for non-existent role")
 	}
 }
 
-func TestWorkerService_AssignRole(t *testing.T) {
+func TestStaffService_AssignRole(t *testing.T) {
 	service, _, companyRepo := setupTestService()
 	addCompanyWithRoles(companyRepo, "ACME", map[string]float64{"CLEANING": 15.0, "DELIVERY": 20.0})
 
 	ctx := context.Background()
-	service.CreateWorker(ctx, "uuid-1", "+1234567890", "John Doe", "ACME", []string{"CLEANING"})
+	service.CreateStaff(ctx, "uuid-1", "+1234567890", "John Doe", "ACME", []string{"CLEANING"})
 
 	err := service.AssignRole(ctx, "uuid-1", "DELIVERY")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	worker, _ := service.GetWorker(ctx, "uuid-1")
-	if !worker.HasRole("DELIVERY") {
-		t.Error("expected worker to have DELIVERY role")
+	staff, _ := service.GetStaff(ctx, "uuid-1")
+	if !staff.HasRole("DELIVERY") {
+		t.Error("expected staff to have DELIVERY role")
 	}
 }
 
-func TestWorkerService_AssignRole_RoleNotFound(t *testing.T) {
+func TestStaffService_AssignRole_RoleNotFound(t *testing.T) {
 	service, _, companyRepo := setupTestService()
 	addCompanyWithRoles(companyRepo, "ACME", map[string]float64{"CLEANING": 15.0})
 
 	ctx := context.Background()
-	service.CreateWorker(ctx, "uuid-1", "+1234567890", "John Doe", "ACME", []string{})
+	service.CreateStaff(ctx, "uuid-1", "+1234567890", "John Doe", "ACME", []string{})
 
 	err := service.AssignRole(ctx, "uuid-1", "NONEXISTENT")
 	if err == nil {
@@ -203,20 +203,20 @@ func TestWorkerService_AssignRole_RoleNotFound(t *testing.T) {
 	}
 }
 
-func TestWorkerService_DeactivateWorker(t *testing.T) {
+func TestStaffService_DeactivateStaff(t *testing.T) {
 	service, _, companyRepo := setupTestService()
 	addCompanyWithRoles(companyRepo, "ACME", map[string]float64{"CLEANING": 15.0})
 
 	ctx := context.Background()
-	service.CreateWorker(ctx, "uuid-1", "+1234567890", "John Doe", "ACME", []string{})
+	service.CreateStaff(ctx, "uuid-1", "+1234567890", "John Doe", "ACME", []string{})
 
-	err := service.DeactivateWorker(ctx, "uuid-1")
+	err := service.DeactivateStaff(ctx, "uuid-1")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	worker, _ := service.GetWorker(ctx, "uuid-1")
-	if worker.IsActive {
-		t.Error("expected worker to be inactive")
+	staff, _ := service.GetStaff(ctx, "uuid-1")
+	if staff.IsActive {
+		t.Error("expected staff to be inactive")
 	}
 }

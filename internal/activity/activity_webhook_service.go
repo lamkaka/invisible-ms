@@ -9,15 +9,15 @@ import (
 	"github.com/google/uuid"
 	"github.com/lamkaka/invisible-ms/internal/company"
 	"github.com/lamkaka/invisible-ms/internal/shared"
-	"github.com/lamkaka/invisible-ms/internal/worker"
+	"github.com/lamkaka/invisible-ms/internal/staff"
 )
 
 var (
-	ErrWorkerNotActive  = errors.New("worker is not active")
-	ErrWorkerNotFound   = errors.New("worker not found")
-	ErrRoleNotAssigned  = errors.New("role not assigned to worker")
+	ErrStaffNotActive   = errors.New("staff is not active")
+	ErrStaffNotFound    = errors.New("staff not found")
+	ErrRoleNotAssigned  = errors.New("role not assigned to staff")
 	ErrNoActiveCheckIn  = errors.New("no active check-in for this role")
-	ErrAlreadyCheckedIn = errors.New("worker already checked in for this role")
+	ErrAlreadyCheckedIn = errors.New("staff already checked in for this role")
 )
 
 type WebhookService struct {
@@ -27,7 +27,7 @@ type WebhookService struct {
 }
 
 type WorkerServiceInterface interface {
-	GetWorkerByPhone(ctx context.Context, phone, companyCode string) (*worker.Worker, error)
+	GetStaffByPhone(ctx context.Context, phone, companyCode string) (*staff.Staff, error)
 }
 
 func NewWebhookService(
@@ -49,17 +49,17 @@ type WebhookPayload struct {
 }
 
 func (s *WebhookService) ProcessWebhook(ctx context.Context, payload WebhookPayload) (*ActivityLog, error) {
-	// Find worker by phone and company
-	workerEntity, err := s.workerService.GetWorkerByPhone(ctx, payload.Phone, payload.CompanyCode)
+	// Find staff by phone and company
+	staffEntity, err := s.workerService.GetStaffByPhone(ctx, payload.Phone, payload.CompanyCode)
 	if err != nil {
 		if errors.Is(err, shared.ErrNotFound) {
-			return nil, ErrWorkerNotFound
+			return nil, ErrStaffNotFound
 		}
-		return nil, fmt.Errorf("failed to look up worker: %w", err)
+		return nil, fmt.Errorf("failed to look up staff: %w", err)
 	}
 
-	if !workerEntity.IsActive {
-		return nil, ErrWorkerNotActive
+	if !staffEntity.IsActive {
+		return nil, ErrStaffNotActive
 	}
 
 	// Fetch company action types and build keyword map
@@ -74,24 +74,24 @@ func (s *WebhookService) ProcessWebhook(ctx context.Context, payload WebhookPayl
 	}
 
 	// Parse message using company-configured keywords
-	actionType, role, err := ParseMessage(payload.Message, len(workerEntity.AssignedRoles), keywordMap)
+	actionType, role, err := ParseMessage(payload.Message, len(staffEntity.AssignedRoles), keywordMap)
 	if err != nil {
 		return nil, err
 	}
 
-	// If no role specified and worker has only one role, use that
-	if role == "" && len(workerEntity.AssignedRoles) == 1 {
-		role = workerEntity.AssignedRoles[0]
+	// If no role specified and staff has only one role, use that
+	if role == "" && len(staffEntity.AssignedRoles) == 1 {
+		role = staffEntity.AssignedRoles[0]
 	}
 
-	// Validate role is assigned to worker
-	if !workerEntity.HasRole(role) {
+	// Validate role is assigned to staff
+	if !staffEntity.HasRole(role) {
 		return nil, ErrRoleNotAssigned
 	}
 
 	// Create activity log
 	logID := uuid.New().String()
-	log, err := NewActivityLog(logID, workerEntity.WorkerID, payload.CompanyCode, role, actionType, time.Now())
+	log, err := NewActivityLog(logID, staffEntity.StaffID, payload.CompanyCode, role, actionType, time.Now())
 	if err != nil {
 		return nil, err
 	}

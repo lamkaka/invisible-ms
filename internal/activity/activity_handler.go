@@ -53,7 +53,7 @@ func (h *ActivityHandler) HandleWebhook(w http.ResponseWriter, r *http.Request) 
 }
 
 func (h *ActivityHandler) ListActivities(w http.ResponseWriter, r *http.Request) {
-	workerID := r.URL.Query().Get("worker_id")
+	staffID := r.URL.Query().Get("staff_id")
 	companyCode := r.URL.Query().Get("company_code")
 
 	fromStr := r.URL.Query().Get("from")
@@ -69,7 +69,7 @@ func (h *ActivityHandler) ListActivities(w http.ResponseWriter, r *http.Request)
 		to = time.Now()
 	}
 
-	logs, err := h.sessionService.GetActivities(r.Context(), workerID, companyCode, from, to)
+	logs, err := h.sessionService.GetActivities(r.Context(), staffID, companyCode, from, to)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

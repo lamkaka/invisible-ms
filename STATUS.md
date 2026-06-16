@@ -5,7 +5,7 @@
 
 ## Overview
 
-IMS (Hourly Worker Management System) is a multi-tenant HR application for managing hourly workers via WhatsApp webhooks. The system tracks check-in/check-out, computes work sessions and costs, and provides a management dashboard.
+IMS (Hourly Staff Management System) is a multi-tenant HR application for managing hourly staff via WhatsApp webhooks. The system tracks check-in/check-out, computes work sessions and costs, and provides a management dashboard.
 
 ## Architecture
 
@@ -17,7 +17,7 @@ IMS (Hourly Worker Management System) is a multi-tenant HR application for manag
 ### Cells
 
 1. **Company** - Manages companies and their role catalogs
-2. **Worker** - Manages workers and role assignments
+2. **Staff** - Manages staff and role assignments
 3. **Activity** - Handles webhooks, activity logs, and session computation
 4. **Dashboard** - Read-only aggregation for management dashboard
 
@@ -36,17 +36,17 @@ Handler → Service → Domain ← Repository
 
 ### Core Functionality
 - ✅ Company management (CRUD + roles)
-- ✅ Worker management (CRUD + role assignments)
+- ✅ Staff management (CRUD + role assignments)
 - ✅ WhatsApp webhook integration (check-in/check-out)
 - ✅ Activity log tracking
 - ✅ Session computation (pairing CHECK_IN/CHECK_OUT)
 - ✅ Cost calculation (duration × hourly rate)
 - ✅ Dashboard with real-time stats
-- ✅ Worker management UI
+- ✅ Staff management UI
 
 ### Security & Data Integrity
 - ✅ Webhook authentication (X-Webhook-Secret header)
-- ✅ Role validation (workers can only be assigned roles that exist in company catalog)
+- ✅ Role validation (staff can only be assigned roles that exist in company catalog)
 - ✅ Atomic operations (all create/update operations use transactions)
 - ✅ Race condition prevention (check-out validation is atomic)
 
@@ -67,21 +67,21 @@ Handler → Service → Domain ← Repository
 - `POST /api/companies/:code/roles` - Add role
 - `DELETE /api/companies/:code/roles/:role` - Remove role
 
-**Worker:**
-- `GET /api/workers` - List workers (filter by company_code)
-- `POST /api/workers` - Create worker
-- `GET /api/workers/:id` - Get worker details
-- `POST /api/workers/:id/roles` - Assign role
-- `DELETE /api/workers/:id/roles/:role` - Unassign role
+**Staff:**
+- `GET /api/staff` - List staff (filter by company_code)
+- `POST /api/staff` - Create staff
+- `GET /api/staff/:id` - Get staff details
+- `POST /api/staff/:id/roles` - Assign role
+- `DELETE /api/staff/:id/roles/:role` - Unassign role
 
 **Activity:**
-- `GET /api/activities` - List activity logs (filter by worker_id, company_code, date range)
+- `GET /api/activities` - List activity logs (filter by staff_id, company_code, date range)
 - `GET /api/activities/sessions` - List computed work sessions
 
 **Dashboard:**
-- `GET /api/dashboard/stats` - Aggregated stats (currently working, costs, worker activity)
+- `GET /api/dashboard/stats` - Aggregated stats (currently working, costs, staff activity)
 - `GET /dashboard` - HTML dashboard page
-- `GET /workers` - HTML worker management page
+- `GET /staff` - HTML staff management page
 
 ## Running the Application
 
@@ -126,7 +126,7 @@ Seed script available at `/tmp/seed_data.sh` creates:
 ### Not Yet Implemented
 
 1. **Overtime Alerts** - Dashboard shows null for overtime alerts. Need threshold logic.
-2. **Average Hours Calculation** - Dashboard shows 0 for average hours per worker.
+2. **Average Hours Calculation** - Dashboard shows 0 for average hours per staff.
 3. **Handler Tests** - Only domain and service layers have tests. HTTP handlers have no test coverage.
 4. **Repository Integration Tests** - Skipped per user request, but would be valuable.
 5. **Authentication** - No auth for dashboard/API access (MVP decision).
@@ -136,7 +136,7 @@ Seed script available at `/tmp/seed_data.sh` creates:
 
 ### Technical Debt
 
-1. **List Operations N+1** - `CompanyRepository.List` and `WorkerRepository.List` do N+1 queries (query IDs, then fetch each entity). Could be optimized with JOINs.
+1. **List Operations N+1** - `CompanyRepository.List` and `StaffRepository.List` do N+1 queries (query IDs, then fetch each entity). Could be optimized with JOINs.
 2. **Session Service N+1** - `SessionService.GetSessions` calls `GetCompany` for each session to get hourly rate. Could use JOIN like dashboard repository.
 3. **Time Parse Errors Ignored** - Activity handler ignores time parse errors (benign but not ideal).
 4. **No Phone/Company Code Format Validation** - No regex/E.164 validation on phone numbers.
@@ -151,8 +151,8 @@ go test ./...
 ### Test Coverage
 - ✅ Company domain (6 tests)
 - ✅ Company service (3 tests)
-- ✅ Worker domain (6 tests)
-- ✅ Worker service (5 tests, including role validation)
+- ✅ Staff domain (6 tests)
+- ✅ Staff service (5 tests, including role validation)
 - ✅ Activity domain (4 tests)
 - ✅ Activity webhook service (3 tests)
 - ✅ Dashboard service (1 test)
@@ -164,17 +164,17 @@ go test ./...
 All critical and important issues from Oracle review have been addressed:
 
 ### Critical (Fixed)
-1. ✅ Worker role updates now persist (ReadWriteTransaction)
-2. ✅ Worker roles validated against company catalog
+1. ✅ Staff role updates now persist (ReadWriteTransaction)
+2. ✅ Staff roles validated against company catalog
 3. ✅ Webhook authentication added
 
 ### Important (Fixed)
 4. ✅ Check-out race condition fixed (atomic transaction)
-5. ✅ Company/worker create operations atomic
+5. ✅ Company/staff create operations atomic
 6. ✅ Dashboard uses SQL for aggregations
 7. ✅ Session N+1 eliminated
 8. ✅ HTTP error codes discriminate (404/409/400/500)
-9. ✅ GetWorkerStats implemented
+9. ✅ GetStaffStats implemented
 10. ✅ Template parsing moved to startup
 
 ## File Naming Convention
@@ -190,14 +190,14 @@ All files follow `{entity}_{role}.go` pattern:
 ### Tables
 - `companies` - Company master data
 - `company_roles` - Role catalog per company (interleaved)
-- `workers` - Worker master data
-- `worker_roles` - Role assignments (interleaved)
+- `staff` - Staff master data
+- `staff_roles` - Role assignments (interleaved)
 - `activity_logs` - Check-in/check-out events
 
 ### Indexes
-- `workers_by_company` - Query workers by company
-- `workers_by_phone` - Unique index on (company_code, phone_number)
-- `activity_logs_by_worker` - Query logs by worker + timestamp
+- `staff_by_company` - Query staff by company
+- `staff_by_phone` - Unique index on (company_code, phone_number)
+- `activity_logs_by_staff` - Query logs by staff + timestamp
 - `activity_logs_by_company` - Query logs by company + timestamp
 - `activity_logs_by_action` - Query logs by action type
 
@@ -216,14 +216,14 @@ WEBHOOK_SECRET=your-secret-here
 
 - `e354032` - fix: address Oracle code review (critical + important issues)
 - `b6fbdc4` - feat: implement cost tracking and activity list endpoint
-- `bcecfdb` - feat: complete dashboard and workers UI with modern design
+- `bcecfdb` - feat: complete dashboard and staff UI with modern design
 - `380cce5` - feat: IMS application complete
 - `b294dd3` - feat: wire all dependencies in main.go
 - `ac49941` - feat: add dashboard cell
 - `26f260a` - feat: add activity cell
 - `3243448` - feat: add activity domain layer
-- `a9004ef` - feat: add worker cell
-- `953306a` - feat: add worker domain layer
+- `a9004ef` - feat: add staff cell
+- `953306a` - feat: add staff domain layer
 - `b61eb6b` - feat: add company handler layer
 - `1428d03` - feat: add company service layer
 - `585ef06` - feat: add company repository layer
@@ -239,7 +239,7 @@ WEBHOOK_SECRET=your-secret-here
 4. **Export Reports** - CSV/PDF export for activity logs and costs
 5. **Email Notifications** - Notify managers of overtime, late check-ins
 6. **Mobile App** - Native mobile app for managers
-7. **Worker Self-Service** - Portal for workers to view their own hours
+7. **Staff Self-Service** - Portal for staff to view their own hours
 8. **Performance Optimization** - Fix remaining N+1 queries in List operations
 9. **Test Coverage** - Add handler and repository integration tests
 10. **Input Validation** - Add phone number format validation (E.164)

@@ -87,39 +87,39 @@ document.addEventListener('alpine:init', () => {
     }));
 
     // ============================================
-    // Workers Component
+    // Staff Component
     // ============================================
-    Alpine.data('workers', () => ({
-        workers: [],
+    Alpine.data('staff', () => ({
+        staffList: [],
         loading: false,
         error: null,
         showCreateModal: false,
         showEditModal: false,
         saving: false,
         form: {
-            worker_id: '',
+            staff_id: '',
             name: '',
             phone_number: '',
             assigned_roles: []
         },
 
         async init() {
-            await this.fetchWorkers();
+            await this.fetchStaff();
         },
 
-        async fetchWorkers() {
+        async fetchStaff() {
             this.loading = true;
             this.error = null;
 
             try {
-                const response = await fetch('/api/workers?company_code=ACME');
+                const response = await fetch('/api/staff?company_code=ACME');
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
-                this.workers = await response.json();
+                this.staffList = await response.json();
             } catch (err) {
                 this.error = err.message;
-                console.error('Failed to fetch workers:', err);
+                console.error('Failed to fetch staff:', err);
             } finally {
                 this.loading = false;
             }
@@ -135,24 +135,24 @@ document.addEventListener('alpine:init', () => {
                 .substring(0, 2);
         },
 
-        editWorker(worker) {
+        editStaff(staffMember) {
             this.form = {
-                worker_id: worker.worker_id,
-                name: worker.name,
-                phone_number: worker.phone_number,
-                assigned_roles: [...worker.assigned_roles]
+                staff_id: staffMember.staff_id,
+                name: staffMember.name,
+                phone_number: staffMember.phone_number,
+                assigned_roles: [...staffMember.assigned_roles]
             };
             this.showEditModal = true;
         },
 
-        async saveWorker() {
+        async saveStaff() {
             this.saving = true;
 
             try {
-                const isEdit = !!this.form.worker_id;
+                const isEdit = !!this.form.staff_id;
                 const url = isEdit
-                    ? `/api/workers/${this.form.worker_id}`
-                    : '/api/workers';
+                    ? `/api/staff/${this.form.staff_id}`
+                    : '/api/staff';
 
                 const method = isEdit ? 'PUT' : 'POST';
 
@@ -172,25 +172,25 @@ document.addEventListener('alpine:init', () => {
                 }
 
                 this.closeModal();
-                await this.fetchWorkers();
+                await this.fetchStaff();
             } catch (err) {
                 this.error = err.message;
-                console.error('Failed to save worker:', err);
+                console.error('Failed to save staff:', err);
             } finally {
                 this.saving = false;
             }
         },
 
-        async toggleStatus(worker) {
+        async toggleStatus(staffMember) {
             try {
-                const response = await fetch(`/api/workers/${worker.worker_id}`, {
+                const response = await fetch(`/api/staff/${staffMember.staff_id}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        ...worker,
-                        is_active: !worker.is_active
+                        ...staffMember,
+                        is_active: !staffMember.is_active
                     })
                 });
 
@@ -198,10 +198,10 @@ document.addEventListener('alpine:init', () => {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
 
-                await this.fetchWorkers();
+                await this.fetchStaff();
             } catch (err) {
                 this.error = err.message;
-                console.error('Failed to toggle worker status:', err);
+                console.error('Failed to toggle staff status:', err);
             }
         },
 
@@ -210,7 +210,7 @@ document.addEventListener('alpine:init', () => {
             this.showEditModal = false;
             this.showDeleteModal = false;
             this.form = {
-                worker_id: '',
+                staff_id: '',
                 name: '',
                 phone_number: '',
                 assigned_roles: []

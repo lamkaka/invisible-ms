@@ -1,6 +1,6 @@
-# IMS - Hourly Worker Management System
+# IMS - Hourly Staff Management System
 
-Multi-tenant HR application for managing hourly workers (freelancers, contractors, part-time, shift workers). Workers check in and out via WhatsApp using keyword commands. The system tracks activity logs, computes hours and costs per role, and provides a management dashboard.
+Multi-tenant HR application for managing hourly staff (freelancers, contractors, part-time, shift staff). Workers check in and out via WhatsApp using keyword commands. The system tracks activity logs, computes hours and costs per role, and provides a management dashboard.
 
 ## Architecture
 
@@ -15,8 +15,8 @@ The application follows Domain-Driven Design (DDD) with Clean Architecture and C
             +----------------+----------------+
             |                |                |
      +------v------+  +-----v------+  +------v------+
-     |   Company   |  |   Worker   |  |  Activity   |
-     | (standalone)|  | -> company |  | -> worker   |
+     |   Company   |  |   Staff   |  |  Activity   |
+     | (standalone)|  | -> company |  | -> staff   |
      +-------------+  +------------+  +-------------+
 ```
 
@@ -36,8 +36,8 @@ Handler -> Service -> Domain <- Repository
 | Cell | Dependencies |
 |------|-------------|
 | `company` | Standalone -- no internal dependencies |
-| `worker` | Depends on `company` (validates roles exist in company catalog) |
-| `activity` | Depends on `worker` (validates worker exists and has role), `company` (keyword resolution) |
+| `staff` | Depends on `company` (validates roles exist in company catalog) |
+| `activity` | Depends on `staff` (validates staff exists and has role), `company` (keyword resolution) |
 | `dashboard` | Depends on all cells (read-only aggregation) |
 
 ### File Naming Convention
@@ -77,11 +77,11 @@ ims/
 │   │   ├── company_repository.go  # Spanner repository for companies + roles
 │   │   ├── company_action_type_repository.go  # Spanner repository for action types
 │   │   └── company_handler.go     # REST API handlers for companies, roles, action types
-│   ├── worker/                    # Worker management cell
-│   │   ├── worker_domain.go       # Worker aggregate, role assignment rules
-│   │   ├── worker_service.go      # Orchestration with company role validation
-│   │   ├── worker_repository.go   # Spanner repository with atomic transactions
-│   │   └── worker_handler.go      # REST API handlers for workers
+│   ├── staff/                    # Staff management cell
+│   │   ├── staff_domain.go       # Staff aggregate, role assignment rules
+│   │   ├── staff_service.go      # Orchestration with company role validation
+│   │   ├── staff_repository.go   # Spanner repository with atomic transactions
+│   │   └── staff_handler.go      # REST API handlers for staff
 │   ├── activity/                  # Activity/check-in tracking cell
 │   │   ├── activity_domain.go     # ActivityLog aggregate, message parsing, session calculations
 │   │   ├── activity_webhook_service.go   # Webhook processing orchestration
@@ -96,15 +96,15 @@ ims/
 │       └── dashboard_web_handler.go      # Server-rendered HTML pages
 ├── web/static/
 │   ├── css/style.css              # Dashboard styling (1023 lines)
-│   └── js/app.js                  # Alpine.js components (dashboard, workers, action types)
+│   └── js/app.js                  # Alpine.js components (dashboard, staff, action types)
 ├── templates/
 │   ├── layout.html                # Base HTML template with navigation
 │   ├── dashboard.html             # Dashboard page with real-time stats
-│   ├── workers.html               # Worker management page
+│   ├── staff.html               # Staff management page
 │   └── actions.html               # Action type configuration page
 ├── migrations/
 │   ├── 001_create_companies.sql           # Companies + company_roles tables
-│   ├── 002_create_workers.sql             # Workers + worker_roles tables
+│   ├── 002_create_staff.sql             # Workers + staff_roles tables
 │   ├── 003_create_activity_logs.sql       # Activity logs table + indexes
 │   └── 004_create_company_action_types.sql # Action types + seed data
 ├── nginx/
@@ -208,7 +208,7 @@ The server starts on **http://localhost:8080**.
 go run ./cmd/setup
 ```
 
-Creates sample companies, workers, and activity data for development and testing.
+Creates sample companies, staff, and activity data for development and testing.
 
 ## Environment Variables
 
@@ -254,22 +254,22 @@ Receives WhatsApp check-in/check-out events. Requires `X-Webhook-Secret` header 
 | PUT | `/api/companies/{code}/action-types/{action}` | Update action type keyword (body: `keyword`) |
 | DELETE | `/api/companies/{code}/action-types/{action}` | Delete custom action type (system types protected) |
 
-### Worker Management
+### Staff Management
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/api/workers` | List workers (query: `company_code`) |
-| POST | `/api/workers` | Create worker (body: `phone_number`, `name`, `company_code`, `roles[]`) |
-| GET | `/api/workers/{id}` | Get worker details |
-| PUT | `/api/workers/{id}` | Update worker (body: `name`, `phone_number`, `is_active`) |
-| POST | `/api/workers/{id}/roles` | Assign role (body: `role_name`) |
-| DELETE | `/api/workers/{id}/roles/{role}` | Unassign role |
+| GET | `/api/staff` | List staff (query: `company_code`) |
+| POST | `/api/staff` | Create staff (body: `phone_number`, `name`, `company_code`, `roles[]`) |
+| GET | `/api/staff/{id}` | Get staff details |
+| PUT | `/api/staff/{id}` | Update staff (body: `name`, `phone_number`, `is_active`) |
+| POST | `/api/staff/{id}/roles` | Assign role (body: `role_name`) |
+| DELETE | `/api/staff/{id}/roles/{role}` | Unassign role |
 
 ### Activity
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/api/activities` | List activity logs (query: `worker_id`, `company_code`, `from`, `to`) |
+| GET | `/api/activities` | List activity logs (query: `staff_id`, `company_code`, `from`, `to`) |
 | GET | `/api/activities/sessions` | List computed work sessions (query: `company_code`, `from`, `to`) |
 
 ### Dashboard
@@ -278,7 +278,7 @@ Receives WhatsApp check-in/check-out events. Requires `X-Webhook-Secret` header 
 |--------|----------|-------------|
 | GET | `/api/dashboard/stats` | Aggregated dashboard stats in JSON (query: `company_code`) |
 | GET | `/dashboard` | HTML dashboard page |
-| GET | `/workers` | HTML worker management page |
+| GET | `/staff` | HTML staff management page |
 | GET | `/actions` | HTML action type configuration page |
 
 ## WhatsApp Commands
@@ -297,8 +297,8 @@ Keywords are case-insensitive.
 
 | Message | Action | Notes |
 |---------|--------|-------|
-| `IN CLEANING` | Check in for CLEANING role | Role required when worker has multiple roles |
-| `IN` | Check in for only assigned role | Works when worker has exactly one role |
+| `IN CLEANING` | Check in for CLEANING role | Role required when staff has multiple roles |
+| `IN` | Check in for only assigned role | Works when staff has exactly one role |
 | `OUT` | Check out | Ends active session for any role |
 | `BREAK` | Start break | Requires custom action type configuration |
 
@@ -328,25 +328,25 @@ Companies can define custom action types (e.g., BREAK_START, OVERTIME_START) wit
 | `companies` | Company master data | `company_code` |
 | `company_roles` | Role catalog per company (interleaved) | `(company_code, role_name)` |
 | `company_action_types` | Configured action types per company (interleaved) | `(company_code, action_type)` |
-| `workers` | Worker master data | `worker_id` |
-| `worker_roles` | Role assignments (interleaved) | `(worker_id, role_name)` |
+| `staff` | Staff master data | `staff_id` |
+| `staff_roles` | Role assignments (interleaved) | `(staff_id, role_name)` |
 | `activity_logs` | Check-in/check-out events | `log_id` |
 
 ### Indexes
 
 | Index | Columns | Purpose |
 |-------|---------|---------|
-| `workers_by_company` | `(company_code)` | Query workers by company |
-| `workers_by_phone` | `(company_code, phone_number)` UNIQUE | Phone lookup per tenant |
-| `activity_logs_by_worker` | `(worker_id, timestamp)` | Worker activity history |
+| `staff_by_company` | `(company_code)` | Query staff by company |
+| `staff_by_phone` | `(company_code, phone_number)` UNIQUE | Phone lookup per tenant |
+| `activity_logs_by_staff` | `(staff_id, timestamp)` | Staff activity history |
 | `activity_logs_by_company` | `(company_code, timestamp)` | Company activity timeline |
 | `activity_logs_by_action` | `(company_code, action_type, timestamp)` | Action-type analytics |
 | `company_action_types_by_keyword` | `(company_code, keyword)` UNIQUE | Keyword lookup for message parsing |
 
 ### Key Design Decisions
 
-- **Interleaved tables**: `company_roles`, `company_action_types`, and `worker_roles` are interleaved in their parent tables for locality and cascade deletes.
-- **Denormalized `company_code`** in `worker_roles` enables efficient interleaving and prevents cross-tenant role assignments.
+- **Interleaved tables**: `company_roles`, `company_action_types`, and `staff_roles` are interleaved in their parent tables for locality and cascade deletes.
+- **Denormalized `company_code`** in `staff_roles` enables efficient interleaving and prevents cross-tenant role assignments.
 - **SQL aggregations**: Dashboard stats are computed in SQL (not in application memory) to handle large datasets efficiently.
 - **Atomic check-out**: Check-out operations use a `ReadWriteTransaction` to verify active check-in and create the log atomically, preventing double-check-out race conditions.
 
@@ -376,8 +376,8 @@ Tests are organized by layer:
 |-------|-----------|-------|
 | Company domain | `company_domain_test.go` | 6 tests |
 | Company service | `company_service_test.go` | 3 tests |
-| Worker domain | `worker_domain_test.go` | 6 tests |
-| Worker service | `worker_service_test.go` | 5 tests |
+| Staff domain | `staff_domain_test.go` | 6 tests |
+| Staff service | `staff_service_test.go` | 5 tests |
 | Activity domain | `activity_domain_test.go` | 4 tests |
 | Activity service | `activity_service_test.go` | 3 tests |
 | Dashboard service | `dashboard_service_test.go` | 1 test |
@@ -394,14 +394,14 @@ MVP complete -- production ready for initial deployment.
 ### Completed Features
 
 - Company CRUD with role catalog management
-- Worker CRUD with role assignment validation (against company catalog)
+- Staff CRUD with role assignment validation (against company catalog)
 - WhatsApp webhook integration for check-in/check-out
 - Activity log tracking with configurable action types
 - Work session computation (pairing CHECK_IN with next CHECK_OUT)
 - Cost calculation (duration x hourly rate)
-- Dashboard with real-time stats (active workers, hours, costs)
+- Dashboard with real-time stats (active staff, hours, costs)
 - Action type configuration UI (custom keywords per company)
-- Worker management UI
+- Staff management UI
 - Webhook authentication (X-Webhook-Secret)
 - Atomic operations with race condition prevention
 - SQL-based aggregations for performance

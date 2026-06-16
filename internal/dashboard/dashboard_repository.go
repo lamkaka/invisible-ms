@@ -10,12 +10,12 @@ import (
 )
 
 type DashboardRepository interface {
-	GetCurrentlyWorking(ctx context.Context, companyCode string) ([]ActiveWorker, error)
+	GetCurrentlyWorking(ctx context.Context, companyCode string) ([]ActiveStaff, error)
 	GetCheckedInToday(ctx context.Context, companyCode string) (int, error)
 	GetTotalHoursToday(ctx context.Context, companyCode string) (float64, error)
 	GetCostForPeriod(ctx context.Context, companyCode string, from, to time.Time) (float64, error)
 	GetCostByRole(ctx context.Context, companyCode string, from, to time.Time) (map[string]float64, error)
-	GetWorkerStats(ctx context.Context, companyCode string, from, to time.Time) ([]WorkerStats, error)
+	GetStaffStats(ctx context.Context, companyCode string, from, to time.Time) ([]StaffStats, error)
 	GetActionTypeBreakdown(ctx context.Context, companyCode string, from, to time.Time) ([]ActionTypeCount, error)
 }
 
@@ -27,16 +27,16 @@ func NewSpannerDashboardRepository(client *spanner.Client) *SpannerDashboardRepo
 	return &SpannerDashboardRepository{client: client}
 }
 
-func (r *SpannerDashboardRepository) GetCurrentlyWorking(ctx context.Context, companyCode string) ([]ActiveWorker, error) {
+func (r *SpannerDashboardRepository) GetCurrentlyWorking(ctx context.Context, companyCode string) ([]ActiveStaff, error) {
 	stmt := spanner.Statement{
-		SQL: `SELECT w.worker_id, w.name, a.role, a.timestamp 
+		SQL: `SELECT w.staff_id, w.name, a.role, a.timestamp 
 		      FROM activity_logs a
-		      JOIN workers w ON a.worker_id = w.worker_id
+		      JOIN staff w ON a.staff_id = w.staff_id
 		      WHERE a.company_code = @company 
 		        AND a.action_type = 'CHECK_IN'
 		        AND NOT EXISTS (
 		          SELECT 1 FROM activity_logs a2 
-		          WHERE a2.worker_id = a.worker_id 
+		          WHERE a2.staff_id = a.staff_id 
 		            AND a2.role = a.role 
 		            AND a2.action_type = 'CHECK_OUT'
 		            AND a2.timestamp > a.timestamp
@@ -47,33 +47,33 @@ func (r *SpannerDashboardRepository) GetCurrentlyWorking(ctx context.Context, co
 	iter := r.client.Single().Query(ctx, stmt)
 	defer iter.Stop()
 
-	var workers []ActiveWorker
+	var staff []ActiveStaff
 	for {
 		row, err := iter.Next()
 		if err == iterator.Done {
 			break
 		}
 		if err != nil {
-			return nil, fmt.Errorf("failed to query active workers: %w", err)
+			return nil, fmt.Errorf("failed to query active staff: %w", err)
 		}
 
-		var workerID, name, role string
+		var staffID, name, role string
 		var checkIn time.Time
-		if err := row.Columns(&workerID, &name, &role, &checkIn); err != nil {
+		if err := row.Columns(&staffID, &name, &role, &checkIn); err != nil {
 			return nil, fmt.Errorf("failed to parse row: %w", err)
 		}
 
 		hours := time.Since(checkIn).Hours()
-		workers = append(workers, ActiveWorker{
-			WorkerID:   workerID,
-			WorkerName: name,
-			Role:       role,
-			CheckIn:    checkIn,
-			Hours:      hours,
+		staff = append(staff, ActiveStaff{
+			StaffID:   staffID,
+			StaffName: name,
+			Role:      role,
+			CheckIn:   checkIn,
+			Hours:     hours,
 		})
 	}
 
-	return workers, nil
+	return staff, nil
 }
 
 func (r *SpannerDashboardRepository) GetCheckedInToday(ctx context.Context, companyCode string) (int, error) {
@@ -157,14 +157,14 @@ func (r *SpannerDashboardRepository) GetCostForPeriod(ctx context.Context, compa
 	}
 
 	type sessionKey struct {
-		WorkerID string
-		Role     string
+		StaffID string
+		Role    string
 	}
 	checkIns := make(map[sessionKey]checkInInfo)
 	var totalCost float64
 
 	for _, log := range logs {
-		key := sessionKey{WorkerID: log.WorkerID, Role: log.Role}
+		key := sessionKey{StaffID: log.StaffID, Role: log.Role}
 		if log.ActionType == string(activityActionCheckIn) {
 			checkIns[key] = checkInInfo{Timestamp: log.Timestamp, HourlyRate: log.HourlyRate}
 		} else if log.ActionType == string(activityActionCheckOut) {
@@ -185,15 +185,15 @@ func (r *SpannerDashboardRepository) GetCostByRole(ctx context.Context, companyC
 		return nil, err
 	}
 
-	type sessionKey struct {
-		WorkerID string
-		Role     string
-	}
-	checkIns := make(map[sessionKey]checkInInfo)
-	costs := make(map[string]float64)
+		type sessionKey struct {
+			StaffID string
+			Role    string
+		}
+		checkIns := make(map[sessionKey]checkInInfo)
+		costs := make(map[string]float64)
 
-	for _, log := range logs {
-		key := sessionKey{WorkerID: log.WorkerID, Role: log.Role}
+		for _, log := range logs {
+			key := sessionKey{StaffID: log.StaffID, Role: log.Role}
 		if log.ActionType == string(activityActionCheckIn) {
 			checkIns[key] = checkInInfo{Timestamp: log.Timestamp, HourlyRate: log.HourlyRate}
 		} else if log.ActionType == string(activityActionCheckOut) {
@@ -211,25 +211,25 @@ func (r *SpannerDashboardRepository) GetCostByRole(ctx context.Context, companyC
 	return costs, nil
 }
 
-func (r *SpannerDashboardRepository) GetWorkerStats(ctx context.Context, companyCode string, from, to time.Time) ([]WorkerStats, error) {
+func (r *SpannerDashboardRepository) GetStaffStats(ctx context.Context, companyCode string, from, to time.Time) ([]StaffStats, error) {
 	stmt := spanner.Statement{
-		SQL: `SELECT w.worker_id, w.name,
+		SQL: `SELECT w.staff_id, w.name,
 		             COALESCE(SUM(total_hours), 0) as total_hours,
 		             COALESCE(SUM(total_cost), 0) as total_cost
 		      FROM (
 		        SELECT 
-		          paired.worker_id,
+		          paired.staff_id,
 		          TIMESTAMP_DIFF(checkout_ts, checkin_ts, SECOND) / 3600.0 as total_hours,
 		          TIMESTAMP_DIFF(checkout_ts, checkin_ts, SECOND) / 3600.0 * COALESCE(cr.hourly_rate, 0) as total_cost
 		        FROM (
 		          SELECT 
-		            checkin.worker_id,
+		            checkin.staff_id,
 		            checkin.role,
 		            checkin.timestamp as checkin_ts,
 		            (
 		              SELECT MIN(co.timestamp) 
 		              FROM activity_logs co 
-		              WHERE co.worker_id = checkin.worker_id 
+		              WHERE co.staff_id = checkin.staff_id 
 		                AND co.role = checkin.role 
 		                AND co.action_type = 'CHECK_OUT'
 		                AND co.timestamp > checkin.timestamp
@@ -243,8 +243,8 @@ func (r *SpannerDashboardRepository) GetWorkerStats(ctx context.Context, company
 		        LEFT JOIN company_roles cr ON cr.company_code = @company AND cr.role_name = paired.role
 		        WHERE checkout_ts IS NOT NULL
 		      ) sessions
-		      JOIN workers w ON sessions.worker_id = w.worker_id
-		      GROUP BY w.worker_id, w.name
+		      JOIN staff w ON sessions.staff_id = w.staff_id
+		      GROUP BY w.staff_id, w.name
 		      ORDER BY total_hours DESC
 		      LIMIT 10`,
 		Params: map[string]interface{}{
@@ -257,19 +257,19 @@ func (r *SpannerDashboardRepository) GetWorkerStats(ctx context.Context, company
 	iter := r.client.Single().Query(ctx, stmt)
 	defer iter.Stop()
 
-	var stats []WorkerStats
+	var stats []StaffStats
 	for {
 		row, err := iter.Next()
 		if err == iterator.Done {
 			break
 		}
 		if err != nil {
-			return nil, fmt.Errorf("failed to query worker stats: %w", err)
+			return nil, fmt.Errorf("failed to query staff stats: %w", err)
 		}
 
-		var ws WorkerStats
-		if err := row.Columns(&ws.WorkerID, &ws.WorkerName, &ws.TotalHours, &ws.TotalCost); err != nil {
-			return nil, fmt.Errorf("failed to parse worker stat row: %w", err)
+		var ws StaffStats
+		if err := row.Columns(&ws.StaffID, &ws.StaffName, &ws.TotalHours, &ws.TotalCost); err != nil {
+			return nil, fmt.Errorf("failed to parse staff stat row: %w", err)
 		}
 		stats = append(stats, ws)
 	}
@@ -285,7 +285,7 @@ const (
 
 type activityLogRow struct {
 	LogID       string
-	WorkerID    string
+	StaffID     string
 	CompanyCode string
 	Role        string
 	ActionType  string
@@ -299,7 +299,7 @@ type checkInInfo struct {
 
 type activityLogRowWithRate struct {
 	LogID       string
-	WorkerID    string
+	StaffID     string
 	CompanyCode string
 	Role        string
 	ActionType  string
@@ -322,7 +322,7 @@ func (r *SpannerDashboardRepository) queryActivityLogs(ctx context.Context, stmt
 		}
 
 		var log activityLogRow
-		if err := row.Columns(&log.LogID, &log.WorkerID, &log.CompanyCode, &log.Role, &log.ActionType, &log.Timestamp); err != nil {
+		if err := row.Columns(&log.LogID, &log.StaffID, &log.CompanyCode, &log.Role, &log.ActionType, &log.Timestamp); err != nil {
 			return nil, fmt.Errorf("failed to parse activity log row: %w", err)
 		}
 		logs = append(logs, log)
@@ -333,7 +333,7 @@ func (r *SpannerDashboardRepository) queryActivityLogs(ctx context.Context, stmt
 
 func (r *SpannerDashboardRepository) queryLogsWithRates(ctx context.Context, companyCode string, from, to time.Time) ([]activityLogRowWithRate, error) {
 	stmt := spanner.Statement{
-		SQL: `SELECT a.log_id, a.worker_id, a.company_code, a.role, a.action_type, a.timestamp, cr.hourly_rate
+		SQL: `SELECT a.log_id, a.staff_id, a.company_code, a.role, a.action_type, a.timestamp, cr.hourly_rate
 		      FROM activity_logs a
 		      LEFT JOIN company_roles cr 
 		        ON a.company_code = cr.company_code AND a.role = cr.role_name
@@ -364,7 +364,7 @@ func (r *SpannerDashboardRepository) queryLogsWithRates(ctx context.Context, com
 
 		var log activityLogRowWithRate
 		var hourlyRate spanner.NullFloat64
-		if err := row.Columns(&log.LogID, &log.WorkerID, &log.CompanyCode, &log.Role, &log.ActionType, &log.Timestamp, &hourlyRate); err != nil {
+		if err := row.Columns(&log.LogID, &log.StaffID, &log.CompanyCode, &log.Role, &log.ActionType, &log.Timestamp, &hourlyRate); err != nil {
 			return nil, fmt.Errorf("failed to parse log with rate row: %w", err)
 		}
 		if hourlyRate.Valid {

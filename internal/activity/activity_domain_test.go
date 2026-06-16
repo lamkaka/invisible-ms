@@ -16,23 +16,23 @@ func TestNewActivityLog(t *testing.T) {
 	tests := []struct {
 		name       string
 		logID      string
-		workerID   string
+		staffID   string
 		company    string
 		role       string
 		actionType string
 		timestamp  time.Time
 		expectErr  bool
 	}{
-		{"valid check-in", "log-1", "worker-1", "ACME", "CLEANING", ActionCheckIn, time.Now(), false},
-		{"valid custom action", "log-2", "worker-1", "ACME", "CLEANING", "BREAK_START", time.Now(), false},
-		{"empty worker", "log-1", "", "ACME", "CLEANING", ActionCheckIn, time.Now(), true},
-		{"empty company", "log-1", "worker-1", "", "CLEANING", ActionCheckIn, time.Now(), true},
-		{"empty role", "log-1", "worker-1", "ACME", "", ActionCheckIn, time.Now(), true},
+		{"valid check-in", "log-1", "staff-1", "ACME", "CLEANING", ActionCheckIn, time.Now(), false},
+		{"valid custom action", "log-2", "staff-1", "ACME", "CLEANING", "BREAK_START", time.Now(), false},
+		{"empty staff", "log-1", "", "ACME", "CLEANING", ActionCheckIn, time.Now(), true},
+		{"empty company", "log-1", "staff-1", "", "CLEANING", ActionCheckIn, time.Now(), true},
+		{"empty role", "log-1", "staff-1", "ACME", "", ActionCheckIn, time.Now(), true},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := NewActivityLog(tt.logID, tt.workerID, tt.company, tt.role, tt.actionType, tt.timestamp)
+			_, err := NewActivityLog(tt.logID, tt.staffID, tt.company, tt.role, tt.actionType, tt.timestamp)
 			if tt.expectErr && err == nil {
 				t.Error("expected error, got nil")
 			}

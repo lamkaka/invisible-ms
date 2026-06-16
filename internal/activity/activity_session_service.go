@@ -9,7 +9,7 @@ import (
 )
 
 type Session struct {
-	WorkerID    string    `json:"worker_id"`
+	StaffID     string    `json:"staff_id"`
 	CompanyCode string    `json:"company_code"`
 	Role        string    `json:"role"`
 	CheckIn     time.Time `json:"check_in"`
@@ -30,14 +30,14 @@ func NewSessionService(activityRepo ActivityRepository, companyService *company.
 	}
 }
 
-func (s *SessionService) GetActivities(ctx context.Context, workerID, companyCode string, from, to time.Time) ([]*ActivityLog, error) {
-	if workerID != "" {
-		return s.activityRepo.GetByWorker(ctx, workerID, from, to)
+func (s *SessionService) GetActivities(ctx context.Context, staffID, companyCode string, from, to time.Time) ([]*ActivityLog, error) {
+	if staffID != "" {
+		return s.activityRepo.GetByWorker(ctx, staffID, from, to)
 	}
 	if companyCode != "" {
 		return s.activityRepo.GetByCompany(ctx, companyCode, from, to)
 	}
-	return nil, fmt.Errorf("either worker_id or company_code is required")
+	return nil, fmt.Errorf("either staff_id or company_code is required")
 }
 
 func (s *SessionService) GetSessions(ctx context.Context, companyCode string, from, to time.Time) ([]*Session, error) {
@@ -46,17 +46,17 @@ func (s *SessionService) GetSessions(ctx context.Context, companyCode string, fr
 		return nil, err
 	}
 
-	// Group logs by worker + role
+	// Group logs by staff + role
 	type sessionKey struct {
-		WorkerID string
-		Role     string
+		StaffID string
+		Role    string
 	}
 
 	checkIns := make(map[sessionKey]time.Time)
 	var sessions []*Session
 
 	for _, log := range logs {
-		key := sessionKey{WorkerID: log.WorkerID, Role: log.Role}
+		key := sessionKey{StaffID: log.StaffID, Role: log.Role}
 
 		if log.ActionType == ActionCheckIn {
 			checkIns[key] = log.Timestamp
@@ -78,7 +78,7 @@ func (s *SessionService) GetSessions(ctx context.Context, companyCode string, fr
 				cost := CalculateSessionCost(duration, role.HourlyRate)
 
 				sessions = append(sessions, &Session{
-					WorkerID:    log.WorkerID,
+					StaffID:     log.StaffID,
 					CompanyCode: log.CompanyCode,
 					Role:        log.Role,
 					CheckIn:     checkInTime,
