@@ -9,19 +9,14 @@ import (
 )
 
 type DashboardWebHandler struct {
-	service  *DashboardService
-	template *template.Template
+	service     *DashboardService
+	templateDir string
 }
 
 func NewDashboardWebHandler(service *DashboardService, templateDir string) (*DashboardWebHandler, error) {
-	tmpl, err := template.ParseGlob(filepath.Join(templateDir, "*.html"))
-	if err != nil {
-		return nil, err
-	}
-
 	return &DashboardWebHandler{
-		service:  service,
-		template: tmpl,
+		service:     service,
+		templateDir: templateDir,
 	}, nil
 }
 
@@ -45,9 +40,27 @@ func (h *DashboardWebHandler) DashboardPage(w http.ResponseWriter, r *http.Reque
 		Stats: stats,
 	}
 
-	h.template.ExecuteTemplate(w, "dashboard.html", data)
+	tmpl, err := template.ParseFiles(
+		filepath.Join(h.templateDir, "layout.html"),
+		filepath.Join(h.templateDir, "dashboard.html"),
+	)
+	if err != nil {
+		http.Error(w, "Template error: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	tmpl.ExecuteTemplate(w, "layout.html", data)
 }
 
 func (h *DashboardWebHandler) WorkersPage(w http.ResponseWriter, r *http.Request) {
-	h.template.ExecuteTemplate(w, "workers.html", nil)
+	tmpl, err := template.ParseFiles(
+		filepath.Join(h.templateDir, "layout.html"),
+		filepath.Join(h.templateDir, "workers.html"),
+	)
+	if err != nil {
+		http.Error(w, "Template error: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	tmpl.ExecuteTemplate(w, "layout.html", nil)
 }

@@ -5,7 +5,7 @@ CREATE TABLE activity_logs (
   role STRING(50) NOT NULL,
   action_type STRING(50) NOT NULL,
   timestamp TIMESTAMP NOT NULL,
-  metadata JSON,
+  metadata JSON
 ) PRIMARY KEY (log_id);
 
 CREATE INDEX activity_logs_by_worker ON activity_logs(worker_id, timestamp);
