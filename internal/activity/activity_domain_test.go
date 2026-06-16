@@ -5,6 +5,13 @@ import (
 	"time"
 )
 
+func defaultKeywordMap() map[string]string {
+	return map[string]string{
+		"IN":  ActionCheckIn,
+		"OUT": ActionCheckOut,
+	}
+}
+
 func TestNewActivityLog(t *testing.T) {
 	tests := []struct {
 		name       string
@@ -12,11 +19,12 @@ func TestNewActivityLog(t *testing.T) {
 		workerID   string
 		company    string
 		role       string
-		actionType ActionType
+		actionType string
 		timestamp  time.Time
 		expectErr  bool
 	}{
 		{"valid check-in", "log-1", "worker-1", "ACME", "CLEANING", ActionCheckIn, time.Now(), false},
+		{"valid custom action", "log-2", "worker-1", "ACME", "CLEANING", "BREAK_START", time.Now(), false},
 		{"empty worker", "log-1", "", "ACME", "CLEANING", ActionCheckIn, time.Now(), true},
 		{"empty company", "log-1", "worker-1", "", "CLEANING", ActionCheckIn, time.Now(), true},
 		{"empty role", "log-1", "worker-1", "ACME", "", ActionCheckIn, time.Now(), true},
@@ -36,26 +44,37 @@ func TestNewActivityLog(t *testing.T) {
 }
 
 func TestParseMessage(t *testing.T) {
+	customKeywordMap := map[string]string{
+		"CLOCK_IN":  ActionCheckIn,
+		"CLOCK_OUT": ActionCheckOut,
+		"BREAK":     "BREAK_START",
+	}
+
 	tests := []struct {
 		name         string
 		message      string
 		numRoles     int
-		expectAction ActionType
+		keywordMap   map[string]string
+		expectAction string
 		expectRole   string
 		expectErr    bool
 	}{
-		{"simple IN", "IN", 1, ActionCheckIn, "", false},
-		{"IN with role", "IN CLEANING", 2, ActionCheckIn, "CLEANING", false},
-		{"simple OUT", "OUT", 1, ActionCheckOut, "", false},
-		{"OUT with role", "OUT DELIVERY", 2, ActionCheckOut, "DELIVERY", false},
-		{"lowercase", "in cleaning", 2, ActionCheckIn, "CLEANING", false},
-		{"invalid action", "BREAK", 1, "", "", true},
-		{"multiple roles no role specified", "IN", 2, "", "", true},
+		{"simple IN", "IN", 1, defaultKeywordMap(), ActionCheckIn, "", false},
+		{"IN with role", "IN CLEANING", 2, defaultKeywordMap(), ActionCheckIn, "CLEANING", false},
+		{"simple OUT", "OUT", 1, defaultKeywordMap(), ActionCheckOut, "", false},
+		{"OUT with role", "OUT DELIVERY", 2, defaultKeywordMap(), ActionCheckOut, "DELIVERY", false},
+		{"lowercase", "in cleaning", 2, defaultKeywordMap(), ActionCheckIn, "CLEANING", false},
+		{"invalid action", "BREAK", 1, defaultKeywordMap(), "", "", true},
+		{"multiple roles no role specified", "IN", 2, defaultKeywordMap(), "", "", true},
+		{"custom keyword CLOCK_IN", "CLOCK_IN", 1, customKeywordMap, ActionCheckIn, "", false},
+		{"custom keyword CLOCK_OUT with role", "CLOCK_OUT CLEANING", 2, customKeywordMap, ActionCheckOut, "CLEANING", false},
+		{"custom keyword BREAK", "BREAK", 1, customKeywordMap, "BREAK_START", "", false},
+		{"unknown keyword", "UNKNOWN", 1, defaultKeywordMap(), "", "", true},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			action, role, err := ParseMessage(tt.message, tt.numRoles)
+			action, role, err := ParseMessage(tt.message, tt.numRoles, tt.keywordMap)
 			if tt.expectErr {
 				if err == nil {
 					t.Error("expected error, got nil")

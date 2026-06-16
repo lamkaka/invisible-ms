@@ -23,7 +23,6 @@ func (m *MockActivityRepository) Create(ctx context.Context, log *ActivityLog) e
 }
 
 func (m *MockActivityRepository) CheckOutWithValidation(ctx context.Context, log *ActivityLog) error {
-	// Simulate the transactional check-out logic in-memory
 	var latestCheckIn *ActivityLog
 	var latestCheckOut *ActivityLog
 	for _, l := range m.logs {
@@ -70,7 +69,7 @@ func (m *MockActivityRepository) GetByCompany(ctx context.Context, companyCode s
 	return result, nil
 }
 
-func (m *MockActivityRepository) GetLatestByWorkerAndRole(ctx context.Context, workerID, role string, actionType ActionType) (*ActivityLog, error) {
+func (m *MockActivityRepository) GetLatestByWorkerAndRole(ctx context.Context, workerID, role string, actionType string) (*ActivityLog, error) {
 	var latest *ActivityLog
 	for _, l := range m.logs {
 		if l.WorkerID == workerID && l.Role == role && l.ActionType == actionType {
@@ -102,24 +101,84 @@ func (m *MockWorkerService) GetWorkerByPhone(ctx context.Context, phone, company
 	return nil, ErrWorkerNotFound
 }
 
-type MockCompanyService struct {
-	companies map[string]*company.Company
+// --- Mock helpers for CompanyService ---
+
+type MockCompanyRepo struct{}
+
+func NewMockCompanyRepo() *MockCompanyRepo { return &MockCompanyRepo{} }
+
+func (m *MockCompanyRepo) Create(ctx context.Context, c *company.Company) error { return nil }
+func (m *MockCompanyRepo) GetByCode(ctx context.Context, code string) (*company.Company, error) {
+	c, _ := company.NewCompany(code, code+" Corp")
+	return c, nil
+}
+func (m *MockCompanyRepo) List(ctx context.Context) ([]*company.Company, error) { return nil, nil }
+func (m *MockCompanyRepo) Update(ctx context.Context, c *company.Company) error { return nil }
+func (m *MockCompanyRepo) Delete(ctx context.Context, code string) error        { return nil }
+
+type MockActionTypeRepository struct {
+	actionTypes []company.CompanyActionType
 }
 
-func NewMockCompanyService() *MockCompanyService {
-	return &MockCompanyService{companies: make(map[string]*company.Company)}
+func NewMockActionTypeRepository() *MockActionTypeRepository {
+	return &MockActionTypeRepository{
+		actionTypes: []company.CompanyActionType{
+			{ActionType: "CHECK_IN", Keyword: "IN", IsSystem: true},
+			{ActionType: "CHECK_OUT", Keyword: "OUT", IsSystem: true},
+		},
+	}
+}
+
+func (m *MockActionTypeRepository) List(ctx context.Context, companyCode string) ([]company.CompanyActionType, error) {
+	return m.actionTypes, nil
+}
+
+func (m *MockActionTypeRepository) Get(ctx context.Context, companyCode, actionType string) (*company.CompanyActionType, error) {
+	for _, at := range m.actionTypes {
+		if at.ActionType == actionType {
+			return &at, nil
+		}
+	}
+	return nil, nil
+}
+
+func (m *MockActionTypeRepository) Create(ctx context.Context, companyCode string, at *company.CompanyActionType) error {
+	return nil
+}
+
+func (m *MockActionTypeRepository) UpdateKeyword(ctx context.Context, companyCode, actionType, newKeyword string) error {
+	return nil
+}
+
+func (m *MockActionTypeRepository) Delete(ctx context.Context, companyCode, actionType string) error {
+	return nil
+}
+
+func (m *MockActionTypeRepository) SeedDefaults(ctx context.Context, companyCode string) error {
+	return nil
+}
+
+func (m *MockActionTypeRepository) KeywordExists(ctx context.Context, companyCode, keyword string) (bool, error) {
+	for _, at := range m.actionTypes {
+		if at.Keyword == keyword {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 func TestWebhookService_ProcessWebhook_CheckIn(t *testing.T) {
 	activityRepo := NewMockActivityRepository()
 	workerService := NewMockWorkerService()
 
-	// Setup worker
 	w, _ := worker.NewWorker("worker-1", "+1234567890", "John Doe", "ACME")
 	w.AssignRole("CLEANING")
 	workerService.workers["worker-1"] = w
 
-	service := NewWebhookService(activityRepo, workerService, nil)
+	mockATRepo := NewMockActionTypeRepository()
+	companySvc := company.NewCompanyService(NewMockCompanyRepo(), mockATRepo)
+
+	service := NewWebhookService(activityRepo, workerService, companySvc)
 
 	ctx := context.Background()
 	payload := WebhookPayload{
@@ -146,7 +205,10 @@ func TestWebhookService_ProcessWebhook_WorkerNotFound(t *testing.T) {
 	activityRepo := NewMockActivityRepository()
 	workerService := NewMockWorkerService()
 
-	service := NewWebhookService(activityRepo, workerService, nil)
+	mockATRepo := NewMockActionTypeRepository()
+	companySvc := company.NewCompanyService(NewMockCompanyRepo(), mockATRepo)
+
+	service := NewWebhookService(activityRepo, workerService, companySvc)
 
 	ctx := context.Background()
 	payload := WebhookPayload{
@@ -170,7 +232,10 @@ func TestWebhookService_ProcessWebhook_InactiveWorker(t *testing.T) {
 	w.Deactivate()
 	workerService.workers["worker-1"] = w
 
-	service := NewWebhookService(activityRepo, workerService, nil)
+	mockATRepo := NewMockActionTypeRepository()
+	companySvc := company.NewCompanyService(NewMockCompanyRepo(), mockATRepo)
+
+	service := NewWebhookService(activityRepo, workerService, companySvc)
 
 	ctx := context.Background()
 	payload := WebhookPayload{
@@ -182,5 +247,75 @@ func TestWebhookService_ProcessWebhook_InactiveWorker(t *testing.T) {
 	_, err := service.ProcessWebhook(ctx, payload)
 	if err == nil {
 		t.Error("expected error for inactive worker")
+	}
+}
+
+func TestWebhookService_ProcessWebhook_CustomKeyword(t *testing.T) {
+	activityRepo := NewMockActivityRepository()
+	workerService := NewMockWorkerService()
+
+	w, _ := worker.NewWorker("worker-1", "+1234567890", "John Doe", "ACME")
+	w.AssignRole("CLEANING")
+	workerService.workers["worker-1"] = w
+
+	mockATRepo := NewMockActionTypeRepository()
+	mockATRepo.actionTypes = []company.CompanyActionType{
+		{ActionType: "CHECK_IN", Keyword: "CLOCK_IN", IsSystem: true},
+		{ActionType: "CHECK_OUT", Keyword: "CLOCK_OUT", IsSystem: true},
+		{ActionType: "BREAK_START", Keyword: "BREAK", IsSystem: false},
+	}
+	companySvc := company.NewCompanyService(NewMockCompanyRepo(), mockATRepo)
+
+	service := NewWebhookService(activityRepo, workerService, companySvc)
+
+	ctx := context.Background()
+	payload := WebhookPayload{
+		Phone:       "+1234567890",
+		Message:     "CLOCK_IN",
+		CompanyCode: "ACME",
+	}
+
+	log, err := service.ProcessWebhook(ctx, payload)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if log.ActionType != ActionCheckIn {
+		t.Errorf("expected CHECK_IN, got %v", log.ActionType)
+	}
+}
+
+func TestWebhookService_ProcessWebhook_CustomActionType(t *testing.T) {
+	activityRepo := NewMockActivityRepository()
+	workerService := NewMockWorkerService()
+
+	w, _ := worker.NewWorker("worker-1", "+1234567890", "John Doe", "ACME")
+	w.AssignRole("CLEANING")
+	workerService.workers["worker-1"] = w
+
+	mockATRepo := NewMockActionTypeRepository()
+	mockATRepo.actionTypes = []company.CompanyActionType{
+		{ActionType: "CHECK_IN", Keyword: "IN", IsSystem: true},
+		{ActionType: "CHECK_OUT", Keyword: "OUT", IsSystem: true},
+		{ActionType: "BREAK_START", Keyword: "BREAK", IsSystem: false},
+	}
+	companySvc := company.NewCompanyService(NewMockCompanyRepo(), mockATRepo)
+
+	service := NewWebhookService(activityRepo, workerService, companySvc)
+
+	ctx := context.Background()
+	payload := WebhookPayload{
+		Phone:       "+1234567890",
+		Message:     "BREAK",
+		CompanyCode: "ACME",
+	}
+
+	log, err := service.ProcessWebhook(ctx, payload)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if log.ActionType != "BREAK_START" {
+		t.Errorf("expected BREAK_START, got %v", log.ActionType)
 	}
 }

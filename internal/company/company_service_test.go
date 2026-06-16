@@ -44,9 +44,61 @@ func (m *MockCompanyRepository) Delete(ctx context.Context, code string) error {
 	return nil
 }
 
+type MockActionTypeRepository struct {
+	actionTypes []CompanyActionType
+}
+
+func NewMockActionTypeRepository() *MockActionTypeRepository {
+	return &MockActionTypeRepository{
+		actionTypes: []CompanyActionType{
+			{ActionType: "CHECK_IN", Keyword: "IN", IsSystem: true},
+			{ActionType: "CHECK_OUT", Keyword: "OUT", IsSystem: true},
+		},
+	}
+}
+
+func (m *MockActionTypeRepository) List(ctx context.Context, companyCode string) ([]CompanyActionType, error) {
+	return m.actionTypes, nil
+}
+
+func (m *MockActionTypeRepository) Get(ctx context.Context, companyCode, actionType string) (*CompanyActionType, error) {
+	for _, at := range m.actionTypes {
+		if at.ActionType == actionType {
+			return &at, nil
+		}
+	}
+	return nil, ErrActionTypeNotFound
+}
+
+func (m *MockActionTypeRepository) Create(ctx context.Context, companyCode string, at *CompanyActionType) error {
+	return nil
+}
+
+func (m *MockActionTypeRepository) UpdateKeyword(ctx context.Context, companyCode, actionType, newKeyword string) error {
+	return nil
+}
+
+func (m *MockActionTypeRepository) Delete(ctx context.Context, companyCode, actionType string) error {
+	return nil
+}
+
+func (m *MockActionTypeRepository) SeedDefaults(ctx context.Context, companyCode string) error {
+	return nil
+}
+
+func (m *MockActionTypeRepository) KeywordExists(ctx context.Context, companyCode, keyword string) (bool, error) {
+	for _, at := range m.actionTypes {
+		if at.Keyword == keyword {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 func TestCompanyService_CreateCompany(t *testing.T) {
 	repo := NewMockCompanyRepository()
-	service := NewCompanyService(repo)
+	atRepo := NewMockActionTypeRepository()
+	service := NewCompanyService(repo, atRepo)
 
 	ctx := context.Background()
 	company, err := service.CreateCompany(ctx, "ACME", "Acme Corp")
@@ -61,7 +113,8 @@ func TestCompanyService_CreateCompany(t *testing.T) {
 
 func TestCompanyService_AddRole(t *testing.T) {
 	repo := NewMockCompanyRepository()
-	service := NewCompanyService(repo)
+	atRepo := NewMockActionTypeRepository()
+	service := NewCompanyService(repo, atRepo)
 
 	ctx := context.Background()
 	service.CreateCompany(ctx, "ACME", "Acme Corp")
@@ -79,7 +132,8 @@ func TestCompanyService_AddRole(t *testing.T) {
 
 func TestCompanyService_AddRole_CompanyNotFound(t *testing.T) {
 	repo := NewMockCompanyRepository()
-	service := NewCompanyService(repo)
+	atRepo := NewMockActionTypeRepository()
+	service := NewCompanyService(repo, atRepo)
 
 	ctx := context.Background()
 	err := service.AddRole(ctx, "NONEXISTENT", "CLEANING", 15.50)

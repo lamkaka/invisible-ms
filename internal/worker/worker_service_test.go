@@ -96,10 +96,40 @@ func (m *MockCompanyRepository) Delete(ctx context.Context, code string) error {
 	return nil
 }
 
+type MockActionTypeRepository struct{}
+
+func NewMockActionTypeRepository() *MockActionTypeRepository { return &MockActionTypeRepository{} }
+
+func (m *MockActionTypeRepository) List(ctx context.Context, companyCode string) ([]company.CompanyActionType, error) {
+	return []company.CompanyActionType{
+		{ActionType: "CHECK_IN", Keyword: "IN", IsSystem: true},
+		{ActionType: "CHECK_OUT", Keyword: "OUT", IsSystem: true},
+	}, nil
+}
+func (m *MockActionTypeRepository) Get(ctx context.Context, companyCode, actionType string) (*company.CompanyActionType, error) {
+	return nil, nil
+}
+func (m *MockActionTypeRepository) Create(ctx context.Context, companyCode string, at *company.CompanyActionType) error {
+	return nil
+}
+func (m *MockActionTypeRepository) UpdateKeyword(ctx context.Context, companyCode, actionType, newKeyword string) error {
+	return nil
+}
+func (m *MockActionTypeRepository) Delete(ctx context.Context, companyCode, actionType string) error {
+	return nil
+}
+func (m *MockActionTypeRepository) SeedDefaults(ctx context.Context, companyCode string) error {
+	return nil
+}
+func (m *MockActionTypeRepository) KeywordExists(ctx context.Context, companyCode, keyword string) (bool, error) {
+	return false, nil
+}
+
 func setupTestService() (*WorkerService, *MockWorkerRepository, *MockCompanyRepository) {
 	workerRepo := NewMockWorkerRepository()
 	companyRepo := NewMockCompanyRepository()
-	companyService := company.NewCompanyService(companyRepo)
+	atRepo := NewMockActionTypeRepository()
+	companyService := company.NewCompanyService(companyRepo, atRepo)
 	service := NewWorkerService(workerRepo, companyService)
 	return service, workerRepo, companyRepo
 }

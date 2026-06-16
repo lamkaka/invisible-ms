@@ -57,8 +57,19 @@ func (s *WebhookService) ProcessWebhook(ctx context.Context, payload WebhookPayl
 		return nil, ErrWorkerNotActive
 	}
 
-	// Parse message
-	actionType, role, err := ParseMessage(payload.Message, len(workerEntity.AssignedRoles))
+	// Fetch company action types and build keyword map
+	actionTypes, err := s.companyService.ListActionTypes(ctx, payload.CompanyCode)
+	if err != nil {
+		return nil, err
+	}
+
+	keywordMap := make(map[string]string, len(actionTypes))
+	for _, at := range actionTypes {
+		keywordMap[at.Keyword] = at.ActionType
+	}
+
+	// Parse message using company-configured keywords
+	actionType, role, err := ParseMessage(payload.Message, len(workerEntity.AssignedRoles), keywordMap)
 	if err != nil {
 		return nil, err
 	}

@@ -15,7 +15,7 @@ type ActivityRepository interface {
 	Create(ctx context.Context, log *ActivityLog) error
 	GetByWorker(ctx context.Context, workerID string, from, to time.Time) ([]*ActivityLog, error)
 	GetByCompany(ctx context.Context, companyCode string, from, to time.Time) ([]*ActivityLog, error)
-	GetLatestByWorkerAndRole(ctx context.Context, workerID, role string, actionType ActionType) (*ActivityLog, error)
+	GetLatestByWorkerAndRole(ctx context.Context, workerID, role string, actionType string) (*ActivityLog, error)
 	CheckOutWithValidation(ctx context.Context, log *ActivityLog) error
 }
 
@@ -30,7 +30,7 @@ func NewSpannerActivityRepository(client *spanner.Client) *SpannerActivityReposi
 func (r *SpannerActivityRepository) Create(ctx context.Context, log *ActivityLog) error {
 	m := spanner.Insert("activity_logs",
 		[]string{"log_id", "worker_id", "company_code", "role", "action_type", "timestamp"},
-		[]interface{}{log.LogID, log.WorkerID, log.CompanyCode, log.Role, string(log.ActionType), log.Timestamp},
+		[]interface{}{log.LogID, log.WorkerID, log.CompanyCode, log.Role, log.ActionType, log.Timestamp},
 	)
 
 	_, err := r.client.Apply(ctx, []*spanner.Mutation{m})
@@ -53,7 +53,7 @@ func (r *SpannerActivityRepository) CheckOutWithValidation(ctx context.Context, 
 			Params: map[string]interface{}{
 				"worker": log.WorkerID,
 				"role":   log.Role,
-				"action": string(ActionCheckIn),
+				"action": ActionCheckIn,
 			},
 		}
 		checkInIter := txn.Query(txnCtx, checkInStmt)
@@ -82,7 +82,7 @@ func (r *SpannerActivityRepository) CheckOutWithValidation(ctx context.Context, 
 			Params: map[string]interface{}{
 				"worker": log.WorkerID,
 				"role":   log.Role,
-				"action": string(ActionCheckOut),
+				"action": ActionCheckOut,
 			},
 		}
 		checkOutIter := txn.Query(txnCtx, checkOutStmt)
@@ -104,7 +104,7 @@ func (r *SpannerActivityRepository) CheckOutWithValidation(ctx context.Context, 
 		// Insert the CHECK_OUT log atomically
 		m := spanner.Insert("activity_logs",
 			[]string{"log_id", "worker_id", "company_code", "role", "action_type", "timestamp"},
-			[]interface{}{log.LogID, log.WorkerID, log.CompanyCode, log.Role, string(log.ActionType), log.Timestamp},
+			[]interface{}{log.LogID, log.WorkerID, log.CompanyCode, log.Role, log.ActionType, log.Timestamp},
 		)
 		return txn.BufferWrite([]*spanner.Mutation{m})
 	})
@@ -144,7 +144,7 @@ func (r *SpannerActivityRepository) GetByCompany(ctx context.Context, companyCod
 	return r.queryLogs(ctx, stmt)
 }
 
-func (r *SpannerActivityRepository) GetLatestByWorkerAndRole(ctx context.Context, workerID, role string, actionType ActionType) (*ActivityLog, error) {
+func (r *SpannerActivityRepository) GetLatestByWorkerAndRole(ctx context.Context, workerID, role string, actionType string) (*ActivityLog, error) {
 	stmt := spanner.Statement{
 		SQL: `SELECT log_id, worker_id, company_code, role, action_type, timestamp 
 		      FROM activity_logs 
@@ -154,7 +154,7 @@ func (r *SpannerActivityRepository) GetLatestByWorkerAndRole(ctx context.Context
 		Params: map[string]interface{}{
 			"worker": workerID,
 			"role":   role,
-			"action": string(actionType),
+			"action": actionType,
 		},
 	}
 
@@ -210,7 +210,7 @@ func (r *SpannerActivityRepository) parseLogRow(row *spanner.Row) (*ActivityLog,
 		WorkerID:    workerID,
 		CompanyCode: companyCode,
 		Role:        role,
-		ActionType:  ActionType(actionType),
+		ActionType:  actionType,
 		Timestamp:   timestamp,
 		Metadata:    make(map[string]interface{}),
 	}, nil

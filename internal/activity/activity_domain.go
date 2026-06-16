@@ -7,13 +7,11 @@ import (
 	"time"
 )
 
-type ActionType string
-
+// Well-known system action type constants — stable identifiers stored in activity_logs.
+// These correspond to system action types that are always present for every company.
 const (
-	ActionCheckIn    ActionType = "CHECK_IN"
-	ActionCheckOut   ActionType = "CHECK_OUT"
-	ActionBreakStart ActionType = "BREAK_START"
-	ActionBreakEnd   ActionType = "BREAK_END"
+	ActionCheckIn  = "CHECK_IN"
+	ActionCheckOut = "CHECK_OUT"
 )
 
 var (
@@ -30,12 +28,12 @@ type ActivityLog struct {
 	WorkerID    string                 `json:"worker_id"`
 	CompanyCode string                 `json:"company_code"`
 	Role        string                 `json:"role"`
-	ActionType  ActionType             `json:"action_type"`
+	ActionType  string                 `json:"action_type"`
 	Timestamp   time.Time              `json:"timestamp"`
 	Metadata    map[string]interface{} `json:"metadata,omitempty"`
 }
 
-func NewActivityLog(logID, workerID, companyCode, role string, actionType ActionType, timestamp time.Time) (*ActivityLog, error) {
+func NewActivityLog(logID, workerID, companyCode, role string, actionType string, timestamp time.Time) (*ActivityLog, error) {
 	if workerID == "" {
 		return nil, ErrInvalidWorkerID
 	}
@@ -57,19 +55,17 @@ func NewActivityLog(logID, workerID, companyCode, role string, actionType Action
 	}, nil
 }
 
-func ParseMessage(message string, numWorkerRoles int) (ActionType, string, error) {
+// ParseMessage resolves a WhatsApp message against the company's configured keyword map.
+// keywordMap maps uppercase keyword (e.g., "IN") to action type name (e.g., "CHECK_IN").
+// Returns the resolved action type name, optional role, and error.
+func ParseMessage(message string, numWorkerRoles int, keywordMap map[string]string) (string, string, error) {
 	parts := strings.Fields(strings.ToUpper(message))
 	if len(parts) == 0 {
 		return "", "", ErrInvalidMessage
 	}
 
-	var action ActionType
-	switch parts[0] {
-	case "IN":
-		action = ActionCheckIn
-	case "OUT":
-		action = ActionCheckOut
-	default:
+	actionType, ok := keywordMap[parts[0]]
+	if !ok {
 		return "", "", fmt.Errorf("%w: %s", ErrUnknownAction, parts[0])
 	}
 
@@ -80,7 +76,7 @@ func ParseMessage(message string, numWorkerRoles int) (ActionType, string, error
 		return "", "", ErrRoleRequired
 	}
 
-	return action, role, nil
+	return actionType, role, nil
 }
 
 func CalculateSessionDuration(checkIn, checkOut time.Time) float64 {
