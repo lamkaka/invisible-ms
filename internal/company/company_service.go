@@ -28,12 +28,6 @@ func (s *CompanyService) CreateCompany(ctx context.Context, code, name string) (
 		return nil, err
 	}
 
-	// Seed default system action types
-	err = s.actionTypes.SeedDefaults(ctx, code)
-	if err != nil {
-		return nil, fmt.Errorf("company created but failed to seed action types: %w", err)
-	}
-
 	return company, nil
 }
 

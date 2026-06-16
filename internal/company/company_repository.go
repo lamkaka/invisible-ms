@@ -29,29 +29,50 @@ func NewSpannerCompanyRepository(client *spanner.Client) *SpannerCompanyReposito
 }
 
 func (r *SpannerCompanyRepository) Create(ctx context.Context, company *Company) error {
-	m := spanner.Insert("companies",
-		[]string{"company_code", "company_name"},
-		[]interface{}{company.CompanyCode, company.CompanyName},
-	)
+	_, err := r.client.ReadWriteTransaction(ctx, func(txnCtx context.Context, txn *spanner.ReadWriteTransaction) error {
+		// Insert company row
+		companyM := spanner.Insert("companies",
+			[]string{"company_code", "company_name"},
+			[]interface{}{company.CompanyCode, company.CompanyName},
+		)
+		if err := txn.BufferWrite([]*spanner.Mutation{companyM}); err != nil {
+			return err
+		}
 
-	_, err := r.client.Apply(ctx, []*spanner.Mutation{m})
+		// Insert roles
+		for _, role := range company.Roles {
+			roleM := spanner.Insert("company_roles",
+				[]string{"company_code", "role_name", "hourly_rate"},
+				[]interface{}{company.CompanyCode, role.Name, role.HourlyRate},
+			)
+			if err := txn.BufferWrite([]*spanner.Mutation{roleM}); err != nil {
+				return err
+			}
+		}
+
+		// Seed default system action types so the company is usable immediately
+		checkInM := spanner.Insert("company_action_types",
+			[]string{"company_code", "action_type", "keyword", "is_system"},
+			[]interface{}{company.CompanyCode, SystemActionCheckIn, "IN", true},
+		)
+		if err := txn.BufferWrite([]*spanner.Mutation{checkInM}); err != nil {
+			return err
+		}
+		checkOutM := spanner.Insert("company_action_types",
+			[]string{"company_code", "action_type", "keyword", "is_system"},
+			[]interface{}{company.CompanyCode, SystemActionCheckOut, "OUT", true},
+		)
+		if err := txn.BufferWrite([]*spanner.Mutation{checkOutM}); err != nil {
+			return err
+		}
+
+		return nil
+	})
 	if err != nil {
 		if status.Code(err) == codes.AlreadyExists {
 			return fmt.Errorf("%w: company %s", shared.ErrAlreadyExists, company.CompanyCode)
 		}
 		return fmt.Errorf("failed to create company: %w", err)
-	}
-
-	// Insert roles
-	for _, role := range company.Roles {
-		roleM := spanner.Insert("company_roles",
-			[]string{"company_code", "role_name", "hourly_rate"},
-			[]interface{}{company.CompanyCode, role.Name, role.HourlyRate},
-		)
-		_, err := r.client.Apply(ctx, []*spanner.Mutation{roleM})
-		if err != nil {
-			return fmt.Errorf("failed to create role: %w", err)
-		}
 	}
 
 	return nil

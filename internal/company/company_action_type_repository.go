@@ -94,7 +94,7 @@ func (r *SpannerCompanyActionTypeRepository) Create(ctx context.Context, company
 	_, err := r.client.Apply(ctx, []*spanner.Mutation{m})
 	if err != nil {
 		if status.Code(err) == codes.AlreadyExists {
-			return fmt.Errorf("%w: action type %s", shared.ErrAlreadyExists, at.ActionType)
+			return fmt.Errorf("%w: %s", ErrKeywordAlreadyExists, at.Keyword)
 		}
 		return fmt.Errorf("failed to create action type: %w", err)
 	}
@@ -112,6 +112,9 @@ func (r *SpannerCompanyActionTypeRepository) UpdateKeyword(ctx context.Context, 
 	if err != nil {
 		if status.Code(err) == codes.NotFound {
 			return fmt.Errorf("%w: action type %s", shared.ErrNotFound, actionType)
+		}
+		if status.Code(err) == codes.AlreadyExists {
+			return fmt.Errorf("%w: %s", ErrKeywordAlreadyExists, newKeyword)
 		}
 		return fmt.Errorf("failed to update action type keyword: %w", err)
 	}
