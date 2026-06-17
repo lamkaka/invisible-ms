@@ -35,6 +35,21 @@ None (read-only aggregation). Consumes data from `activity_logs`, `staff`, and `
 | GET | `/staff` | HTML staff management page |
 | GET | `/actions` | HTML action type management page |
 
+## Query Patterns
+
+The dashboard cell relies on SQL aggregation queries against `activity_logs`, `staff`, and `company_roles` tables:
+
+- Session pairing: Use correlated subqueries to pair CHECK_IN with next CHECK_OUT
+- Cost calculation: JOIN with `company_roles` to get hourly_rate in same query
+- Aggregations: Use `SUM`, `COUNT`, `AVG` in SQL, not in Go code
+- Time-based filtering: Use `TIMESTAMP_DIFF` for duration calculations
+
+### Index Usage
+
+- `activity_logs_by_staff` — querying activity per worker with time range
+- `activity_logs_by_company` — querying activity per company with time range
+- `activity_logs_by_action` — querying open check-ins per company
+
 ## Cell-Specific Business Rules
 - Templates are parsed once at controller creation time (not per-request)
 - All queries use Spanner `Single()` read (no transactions needed for read-only)
