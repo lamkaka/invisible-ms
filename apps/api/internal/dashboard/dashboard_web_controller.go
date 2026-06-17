@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"path/filepath"
 
-	"github.com/gorilla/mux"
+	"github.com/go-chi/chi/v5"
 )
 
 type DashboardWebController struct {
@@ -51,10 +51,10 @@ func NewDashboardWebController(service *DashboardService, templateDir string) (*
 	}, nil
 }
 
-func (h *DashboardWebController) RegisterRoutes(router *mux.Router) {
-	router.HandleFunc("/dashboard", h.DashboardPage).Methods("GET")
-	router.HandleFunc("/staff", h.StaffPage).Methods("GET")
-	router.HandleFunc("/actions", h.ActionsPage).Methods("GET")
+func (h *DashboardWebController) RegisterRoutes(r chi.Router) {
+	r.Get("/dashboard", h.DashboardPage)
+	r.Get("/staff", h.StaffPage)
+	r.Get("/actions", h.ActionsPage)
 }
 
 func (h *DashboardWebController) DashboardPage(w http.ResponseWriter, r *http.Request) {

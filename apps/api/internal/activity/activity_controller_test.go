@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gorilla/mux"
+	"github.com/go-chi/chi/v5"
 
 	"github.com/lamkaka/invisible-ms/internal/company"
 	"github.com/lamkaka/invisible-ms/internal/shared"
@@ -201,7 +201,7 @@ type activityControllerTestMocks struct {
 	workerSvc    *controllerMockWorkerService
 	companySvc   *company.CompanyService
 	controller      *ActivityController
-	router       *mux.Router
+	router       *chi.Mux
 }
 
 func newActivityControllerTestMocks() *activityControllerTestMocks {
@@ -216,7 +216,7 @@ func newActivityControllerTestMocks() *activityControllerTestMocks {
 	sessionSvc := NewSessionService(activityRepo, companySvc)
 
 	controller := NewActivityController(webhookSvc, sessionSvc, testWebhookSecret)
-	router := mux.NewRouter()
+	router := chi.NewRouter()
 	controller.RegisterRoutes(router)
 
 	return &activityControllerTestMocks{

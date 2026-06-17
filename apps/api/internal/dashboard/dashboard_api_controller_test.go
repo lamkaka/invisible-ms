@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gorilla/mux"
+	"github.com/go-chi/chi/v5"
 )
 
 // MockDashboardRepositoryWithError supports injecting errors for specific methods
@@ -115,7 +115,7 @@ func TestDashboardAPIController_GetStats_Success(t *testing.T) {
 
 	service := NewDashboardService(repo)
 	controller := NewDashboardAPIController(service)
-	router := mux.NewRouter()
+	router := chi.NewRouter()
 	controller.RegisterRoutes(router)
 
 	req := httptest.NewRequest("GET", "/api/dashboard/stats?company_code=ACME", nil)
@@ -146,7 +146,7 @@ func TestDashboardAPIController_GetStats_NoCompanyCode(t *testing.T) {
 	repo := newMockDashboardRepo()
 	service := NewDashboardService(repo)
 	controller := NewDashboardAPIController(service)
-	router := mux.NewRouter()
+	router := chi.NewRouter()
 	controller.RegisterRoutes(router)
 
 	// Should still succeed with empty company code (some repos return all data)
@@ -165,7 +165,7 @@ func TestDashboardAPIController_GetStats_InternalError(t *testing.T) {
 
 	service := NewDashboardService(repo)
 	controller := NewDashboardAPIController(service)
-	router := mux.NewRouter()
+	router := chi.NewRouter()
 	controller.RegisterRoutes(router)
 
 	req := httptest.NewRequest("GET", "/api/dashboard/stats?company_code=ACME", nil)

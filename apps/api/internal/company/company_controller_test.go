@@ -9,7 +9,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/gorilla/mux"
+	"github.com/go-chi/chi/v5"
 
 	"github.com/lamkaka/invisible-ms/internal/shared"
 )
@@ -19,7 +19,7 @@ type controllerTestMocks struct {
 	companyRepo *controllerMockCompanyRepo
 	atRepo      *controllerMockActionTypeRepo
 	controller     *CompanyController
-	router      *mux.Router
+	router      *chi.Mux
 }
 
 func newControllerTestMocks() *controllerTestMocks {
@@ -27,7 +27,7 @@ func newControllerTestMocks() *controllerTestMocks {
 	atRepo := newControllerMockActionTypeRepo()
 	service := NewCompanyService(companyRepo, atRepo)
 	controller := NewCompanyController(service)
-	router := mux.NewRouter()
+	router := chi.NewRouter()
 	controller.RegisterRoutes(router)
 	return &controllerTestMocks{
 		companyRepo: companyRepo,

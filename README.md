@@ -24,7 +24,7 @@ See [docs/rules/01-architecture.md](docs/rules/01-architecture.md) for the full 
 
 ## Tech Stack
 
-- **Backend:** Go 1.26 with gorilla/mux router
+- **Backend:** Go 1.26 with go-chi/chi/v5 router
 - **Database:** Google Cloud Spanner (emulator for local development)
 - **Frontend:** Server-rendered HTML + Alpine.js 3.x (CDN, no build step)
 - **Messaging:** External webhook integration (WhatsApp via Waha gateway)

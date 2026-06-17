@@ -24,6 +24,9 @@ vendor/
 # Superpowers
 .superpowers/
 
+# Deepwork session state
+.slim/
+
 # OS
 .DS_Store
 Thumbs.db

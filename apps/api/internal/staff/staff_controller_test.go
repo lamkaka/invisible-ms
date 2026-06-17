@@ -9,7 +9,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/gorilla/mux"
+	"github.com/go-chi/chi/v5"
 
 	"github.com/lamkaka/invisible-ms/internal/company"
 	"github.com/lamkaka/invisible-ms/internal/shared"
@@ -144,7 +144,7 @@ type staffControllerTestMocks struct {
 	staffRepo *controllerMockStaffRepo
 	compRepo  *controllerMockCompanyRepo
 	controller   *StaffController
-	router    *mux.Router
+	router    *chi.Mux
 }
 
 func newStaffControllerTestMocks() *staffControllerTestMocks {
@@ -154,7 +154,7 @@ func newStaffControllerTestMocks() *staffControllerTestMocks {
 	companyService := company.NewCompanyService(compRepo, atRepo)
 	service := NewStaffService(staffRepo, companyService)
 	controller := NewStaffController(service)
-	router := mux.NewRouter()
+	router := chi.NewRouter()
 	controller.RegisterRoutes(router)
 	return &staffControllerTestMocks{
 		staffRepo: staffRepo,

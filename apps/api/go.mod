@@ -4,8 +4,8 @@ go 1.26.4
 
 require (
 	cloud.google.com/go/spanner v1.92.0
+	github.com/go-chi/chi/v5 v5.3.0
 	github.com/google/uuid v1.6.0
-	github.com/gorilla/mux v1.8.1
 	google.golang.org/api v0.283.0
 	google.golang.org/grpc v1.81.1
 )

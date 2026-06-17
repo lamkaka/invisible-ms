@@ -10,7 +10,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/gorilla/mux"
+	"github.com/go-chi/chi/v5"
 
 	"github.com/lamkaka/invisible-ms/internal/activity"
 	"github.com/lamkaka/invisible-ms/internal/company"
@@ -61,7 +61,7 @@ func main() {
 	}
 
 	// Setup router
-	router := mux.NewRouter()
+	router := chi.NewRouter()
 	router.Use(shared.LoggingMiddleware)
 	router.Use(shared.CORSMiddleware(cfg.Web.CORSAllowedOrigins))
 
@@ -73,7 +73,7 @@ func main() {
 	dashboardWebController.RegisterRoutes(router)
 
 	// Serve static files
-	router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir(cfg.Web.StaticPath))))
+	router.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.Dir(cfg.Web.StaticPath))))
 
 	// Create server
 	server := &http.Server{
