@@ -29,7 +29,7 @@ COPY --from=builder /app/migrate /app/api/migrate
 
 # Copy web assets and migrations
 COPY apps/web/ /app/web/
-COPY deployments/migrations/ /app/api/migrations/
+COPY apps/api/migrations/ /app/api/migrations/
 
 ENV TEMPLATES_PATH=/app/web/templates
 ENV STATIC_PATH=/app/web/static

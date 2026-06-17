@@ -64,6 +64,12 @@ Handler -> Service -> Domain <- Repository
 ims/
 ├── apps/
 │   ├── api/                          # Go backend
+│   │   ├── Dockerfile                # Multi-stage Go build (server + migrate)
+│   │   ├── migrations/               # Spanner DDL migrations
+│   │   │   ├── 001_create_companies.sql
+│   │   │   ├── 002_create_staff.sql
+│   │   │   ├── 003_create_activity_logs.sql
+│   │   │   └── 004_create_company_action_types.sql
 │   │   ├── cmd/
 │   │   │   ├── server/main.go        # Entry point, wires all cells
 │   │   │   ├── migrate/main.go       # Database migration tool (Spanner)
@@ -112,14 +118,8 @@ ims/
 │           ├── nginx.conf            # Reverse proxy config (static + API)
 │           └── Dockerfile            # Nginx 1.27-alpine with static assets
 ├── deployments/
-│   ├── Dockerfile                    # Multi-stage Go build (server + migrate)
 │   ├── docker-compose.yml            # Full local stack (4 services)
 │   ├── Makefile                      # Build/run/test/docker targets
-│   ├── migrations/                   # Spanner DDL migrations
-│   │   ├── 001_create_companies.sql
-│   │   ├── 002_create_staff.sql
-│   │   ├── 003_create_activity_logs.sql
-│   │   └── 004_create_company_action_types.sql
 │   ├── .env.example                  # Required environment variables
 │   └── .dockerignore
 ├── docs/
@@ -212,7 +212,7 @@ export WEBHOOK_SECRET=test-secret
 make migrate
 ```
 
-This creates the Spanner instance and database (if they don't exist), applies all DDL from `deployments/migrations/*.sql`, then executes DML seed statements.
+This creates the Spanner instance and database (if they don't exist), applies all DDL from `apps/api/migrations/*.sql`, then executes DML seed statements.
 
 ### 4. Start the Server
 

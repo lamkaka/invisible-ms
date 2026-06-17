@@ -77,7 +77,7 @@ CREATE INDEX activity_logs_by_action ON activity_logs(company_code, action_type,
 
 ## Migration Conventions
 
-- Migration files live in `deployments/migrations/` with numeric prefix ordering
+- Migration files live in `apps/api/migrations/` with numeric prefix ordering
 - Each `.sql` file can contain DDL (CREATE/ALTER/DROP) and DML (INSERT/UPDATE/DELETE)
 - `apps/api/cmd/migrate/main.go` reads migrations, parses by semicolons (respecting string literals), and applies DDL before DML
 - `shared.SplitSQLStatements()` handles the parsing

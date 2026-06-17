@@ -113,11 +113,11 @@ deployments/
 | `web/static/` | `apps/web/static/` |
 | `nginx/` | `apps/infra/nginx/` |
 | `docker-compose.yml` | `deployments/docker-compose.yml` |
-| `Dockerfile` | `deployments/Dockerfile` |
+| `Dockerfile` | `apps/api/Dockerfile` |
 | `.dockerignore` | `deployments/.dockerignore` |
 | `Makefile` | `deployments/Makefile` |
 | `.env.example` | `deployments/.env.example` |
-| `migrations/` | `deployments/migrations/` |
+| `migrations/` | `apps/api/migrations/` |
 | `STATUS.md` | `docs/superpowers/plans/STATUS.md` |
 | `AGENTS.md` (root) | split across `docs/rules/` and cell `AGENTS.md` files |
 
@@ -140,11 +140,11 @@ For local development from the repo root, set `TEMPLATES_PATH=apps/web/templates
 Inside the Docker image, set `WORKDIR /app/api` and copy `apps/api/` to `/app/api/` and `apps/web/` to `/app/web/`. The defaults then resolve to `/app/web/templates` and `/app/web/static`.
 
 ### Dockerfile
-Move `Dockerfile` to `deployments/Dockerfile`. Update the build context in `deployments/docker-compose.yml` to `..` so the API image can access both `apps/api/` and `apps/web/`.
+The API `Dockerfile` lives at `apps/api/Dockerfile`. The build context in `deployments/docker-compose.yml` is `..` (repo root) so the Dockerfile can access both `apps/api/` and `apps/web/`.
 
 ### docker-compose.yml
-Move to `deployments/docker-compose.yml`. Update:
-- API service: `context: ..`, `dockerfile: deployments/Dockerfile`
+Lives in `deployments/docker-compose.yml`. Key settings:
+- API service: `context: ..`, `dockerfile: apps/api/Dockerfile`
 - Nginx service: `context: ..`, `dockerfile: apps/infra/nginx/Dockerfile`
 - Spanner emulator stays as-is (it is a deployment concern)
 

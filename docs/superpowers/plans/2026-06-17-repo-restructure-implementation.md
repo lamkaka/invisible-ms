@@ -109,18 +109,18 @@ git mv nginx apps/infra/
 
 **Files:**
 - Move: `docker-compose.yml` → `deployments/docker-compose.yml`
-- Move: `Dockerfile` → `deployments/Dockerfile`
+- Move: `Dockerfile` → `apps/api/Dockerfile`
 - Move: `.dockerignore` → `deployments/.dockerignore`
 - Move: `Makefile` → `deployments/Makefile`
 - Move: `.env.example` → `deployments/.env.example`
-- Move: `migrations/` → `deployments/migrations/`
+- Move: `migrations/` → `apps/api/migrations/`
 - Create: `deployments/AGENTS.md`
 
 - [ ] **Step 1: Create destination directory and move files**
 
 ```bash
 mkdir -p deployments
-git mv docker-compose.yml Dockerfile .dockerignore Makefile .env.example migrations deployments/
+mkdir -p apps/api/migrations && git mv deployments/migrations/*.sql apps/api/migrations/ && git mv Dockerfile apps/api/Dockerfile && git mv docker-compose.yml .dockerignore Makefile .env.example deployments/
 ```
 
 - [ ] **Step 2: Add `deployments/AGENTS.md`**
@@ -133,8 +133,8 @@ This folder contains everything needed to run IMS locally with Docker Compose.
 ## Files
 
 - `docker-compose.yml` — local stack: Spanner emulator, API, nginx
-- `Dockerfile` — API application image
-- `migrations/` — Spanner DDL migrations
+- `../apps/api/Dockerfile` — API application image (in apps/api)
+- `../apps/api/migrations/` — Spanner DDL migrations (in apps/api)
 - `Makefile` — common commands
 - `.env.example` — required environment variables
 
@@ -277,33 +277,35 @@ Expected: build succeeds.
 
 ---
 
-## Task 8: Update Dockerfile for new layout
+## Task 8: Create API Dockerfile
 
 **Files:**
-- Modify: `deployments/Dockerfile`
+- Create: `apps/api/Dockerfile`
 
-- [ ] **Step 1: Update build context and paths**
-
-Edit `deployments/Dockerfile` to use repo root as build context:
+- [ ] **Step 1: Create `apps/api/Dockerfile`**
 
 ```dockerfile
-FROM golang:1.22-alpine AS builder
+FROM golang:1.26-alpine AS builder
 
 WORKDIR /build
+
+ENV GOTOOLCHAIN=auto
+
 COPY apps/api/go.mod apps/api/go.sum ./
 RUN go mod download
 
 COPY apps/api/ ./
-RUN CGO_ENABLED=0 GOOS=linux go build -o /app/server ./cmd/server
-RUN CGO_ENABLED=0 GOOS=linux go build -o /app/migrate ./cmd/migrate
+RUN CGO_ENABLED=0 go build -o /app/server ./cmd/server
+RUN CGO_ENABLED=0 go build -o /app/migrate ./cmd/migrate
 
-FROM alpine:latest
+FROM alpine:3.20
 RUN apk --no-cache add ca-certificates wget
 WORKDIR /app/api
 
 COPY --from=builder /app/server /app/api/server
 COPY --from=builder /app/migrate /app/api/migrate
 COPY apps/web/ /app/web/
+COPY apps/api/migrations/ /app/api/migrations/
 
 ENV TEMPLATES_PATH=/app/web/templates
 ENV STATIC_PATH=/app/web/static
@@ -316,7 +318,7 @@ CMD ["./server"]
 - [ ] **Step 2: Build the image from repo root to verify**
 
 ```bash
-docker build -f deployments/Dockerfile -t ims-api .
+docker build -f apps/api/Dockerfile -t ims-api .
 ```
 
 Expected: image builds successfully.
@@ -337,13 +339,13 @@ services:
   migrate:
     build:
       context: ..
-      dockerfile: deployments/Dockerfile
+      dockerfile: apps/api/Dockerfile
     # ...
 
   app:
     build:
       context: ..
-      dockerfile: deployments/Dockerfile
+      dockerfile: apps/api/Dockerfile
     # ...
 
   nginx:
