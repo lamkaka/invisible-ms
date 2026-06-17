@@ -2,6 +2,26 @@
 
 Multi-tenant HR application for managing hourly staff (freelancers, contractors, part-time, shift staff). Workers check in and out via WhatsApp using keyword commands. The system tracks activity logs, computes hours and costs per role, and provides a management dashboard.
 
+## Architecture
+
+The application follows Domain-Driven Design (DDD) with Clean Architecture and Cell-Based Architecture. Each bounded context is a self-contained cell with strict dependency rules.
+
+```
+                     +---------------+
+                     |   Dashboard   |
+                     |  (read-only)  |
+                     +-------+-------+
+                             |
+            +----------------+----------------+
+            |                |                |
+     +------v------+  +-----v------+  +------v------+
+     |   Company   |  |   Staff   |  |  Activity   |
+     | (standalone)|  | -> company |  | -> staff   |
+     +-------------+  +------------+  +-------------+
+```
+
+See [docs/rules/01-architecture.md](docs/rules/01-architecture.md) for the full architecture conventions.
+
 ## Tech Stack
 
 - **Backend:** Go 1.26 with gorilla/mux router
