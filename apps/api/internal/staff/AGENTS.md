@@ -4,7 +4,40 @@
 Manages workers (staff members) within companies. Handles staff creation, role assignment, and identification via phone number.
 
 ## Owned Aggregates
-- **Staff** (aggregate root): `staff_id` (UUID, PK), `phone_number`, `name`, `company_code` (FK to Company), `assigned_roles` ([]string), `is_active`
+
+### Staff (Aggregate Root)
+- `staff_id` (string, UUID)
+- `phone_number` (string) — unique within company
+- `name` (string)
+- `company_code` (string) — FK to Company
+- `assigned_roles` ([]string) — list of role names from company's catalog
+- `is_active` (bool)
+
+## Database Schema
+
+### Staff Table
+```sql
+CREATE TABLE staff (
+  staff_id STRING(36) NOT NULL,
+  company_code STRING(50) NOT NULL,
+  phone_number STRING(20) NOT NULL,
+  name STRING(200) NOT NULL,
+  is_active BOOL NOT NULL DEFAULT TRUE,
+) PRIMARY KEY (staff_id);
+
+CREATE INDEX staff_by_company ON staff(company_code);
+CREATE UNIQUE INDEX staff_by_phone ON staff(company_code, phone_number);
+```
+
+### Staff Roles Table
+```sql
+CREATE TABLE staff_roles (
+  staff_id STRING(36) NOT NULL,
+  role_name STRING(50) NOT NULL,
+  company_code STRING(50) NOT NULL,  -- denormalized for interleaving
+) PRIMARY KEY (staff_id, role_name),
+  INTERLEAVE IN PARENT staff ON DELETE CASCADE;
+```
 
 ## File Inventory
 
