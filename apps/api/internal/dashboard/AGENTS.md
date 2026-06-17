@@ -53,9 +53,7 @@ The dashboard cell relies on SQL aggregation queries against `activity_logs`, `s
 ## Cell-Specific Business Rules
 - Templates are parsed once at controller creation time (not per-request)
 - All queries use Spanner `Single()` read (no transactions needed for read-only)
-- Session pairing is done in SQL using correlated subqueries (not in Go)
 - Overtime threshold is configurable; default is 8 hours per day
-- Cost calculation joins with `company_roles` for hourly rates within the SQL query
 - Currently-working detection: latest CHECK_IN per staff+role with no following CHECK_OUT
 - `company_code` query parameter is required for most queries (multi-tenant isolation)
 - All queries filter by company_code to prevent cross-tenant data leakage
