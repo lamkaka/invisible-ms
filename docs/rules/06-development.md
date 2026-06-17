@@ -9,6 +9,7 @@
   - `shared.ErrNotFound` → 404 Not Found
   - `shared.ErrAlreadyExists` → 409 Conflict
   - `shared.ErrInvalidInput` → 400 Bad Request
+  - `shared.ErrUnauthorized` → 401 Unauthorized
   - Internal/DB errors → 500 Internal Server Error
 
 ### Shared Error Types (`apps/api/internal/shared/errors.go`)
