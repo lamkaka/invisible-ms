@@ -75,7 +75,7 @@ make docker-build
 | `SPANNER_PROJECT_ID` | `invisible-ms-local` | Yes | GCP project or emulator project ID |
 | `SPANNER_INSTANCE_ID` | `invisible-ms-instance` | Yes | Spanner instance name |
 | `SPANNER_DATABASE_ID` | `invisible-ms-db` | Yes | Spanner database name |
-| `SPANNER_EMULATOR_HOST` | (empty) | For emulator | Spanner emulator host:port |
+| `SPANNER_EMULATOR_HOST` | (empty) | For emulator | Spanner emulator host:port (e.g., localhost:9010) |
 | `PORT` | `8080` | No | HTTP server port |
 | `WEBHOOK_SECRET` | (empty) | For webhooks | Secret value for webhook authentication header |
 
@@ -126,3 +126,5 @@ MVP complete -- production ready for initial deployment.
 - [docs/rules/04-api-and-webhook.md](docs/rules/04-api-and-webhook.md) — API and webhook conventions
 - [docs/rules/05-testing.md](docs/rules/05-testing.md) — Testing strategy
 - [docs/rules/06-development.md](docs/rules/06-development.md) — Development guidelines
+
+For the full API endpoint inventory and webhook details, see [docs/rules/04-api-and-webhook.md](docs/rules/04-api-and-webhook.md).
