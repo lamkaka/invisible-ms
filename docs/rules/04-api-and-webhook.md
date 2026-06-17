@@ -2,8 +2,6 @@
 
 ## HTTP Status Code Mapping
 
-Domain errors are translated to HTTP status codes at the controller layer:
-
 | Domain Error | HTTP Status Code |
 |---|---|
 | `shared.ErrNotFound` | 404 Not Found |
@@ -13,53 +11,26 @@ Domain errors are translated to HTTP status codes at the controller layer:
 
 ## Webhook Security
 
-- All webhooks require `X-Webhook-Secret` header
-- Secret is loaded from `WEBHOOK_SECRET` environment variable
-- Controller validates secret using constant-time comparison before processing
-- Returns 401 Unauthorized if secret is missing or invalid
+- All webhooks require the `X-Webhook-Secret` header.
+- The secret is loaded from the `WEBHOOK_SECRET` environment variable.
+- Validate the secret with constant-time comparison.
+- Return 401 Unauthorized if the secret is missing or invalid.
 
-## Controller Layer Responsibilities
+## Controller Responsibilities
 
-Controllers (`*_controller.go`):
-- Parse HTTP requests (query params, path vars, JSON body)
-- Call the appropriate service method
-- Translate domain errors to HTTP status codes
-- Set response headers (Content-Type, status code)
-- Encode response bodies (JSON or HTML template)
+Controllers (`*_controller.go`) handle:
 
-Controllers must NOT contain business logic.
+- Parsing HTTP requests (query params, path variables, JSON body)
+- Calling the appropriate service method
+- Translating domain errors to HTTP status codes
+- Setting response headers
+- Encoding response bodies (JSON or HTML template)
 
-## API Endpoint Inventory
+Controllers must not contain business logic.
 
-### Webhook
-- `POST /webhook/message` — receives `{ phone, message, company_code }`
+## Per-Cell Endpoints
 
-### Company Management
-- `GET /api/companies` — list all companies
-- `POST /api/companies` — create company
-- `GET /api/companies/{code}` — get company details
-- `POST /api/companies/{code}/roles` — add role to company
-- `DELETE /api/companies/{code}/roles/{role}` — remove role from company
-- `GET /api/companies/{code}/action-types` — list action types
-- `POST /api/companies/{code}/action-types` — create custom action type
-- `PUT /api/companies/{code}/action-types/{action}` — update action type keyword
-- `DELETE /api/companies/{code}/action-types/{action}` — delete custom action type
-
-### Staff Management
-- `GET /api/staff?company_code=` — list staff (company_code required)
-- `POST /api/staff` — create staff
-- `GET /api/staff/{id}` — get staff details
-- `POST /api/staff/{id}/roles` — assign role to staff
-- `DELETE /api/staff/{id}/roles/{role}` — unassign role from staff
-
-### Activity
-- `GET /api/activities?staff_id=&company_code=&from=&to=` — list activity logs
-- `GET /api/activities/sessions?company_code=&from=&to=` — list computed work sessions
-
-### Dashboard (API)
-- `GET /api/dashboard/stats?company_code=` — aggregated JSON stats
-
-### Dashboard (Web Pages)
-- `GET /dashboard?company_code=` — HTML dashboard page
-- `GET /staff` — HTML staff management page
-- `GET /actions` — HTML action type management page
+- Company, role, and action type endpoints live in [`apps/api/internal/company/AGENTS.md`](../../apps/api/internal/company/AGENTS.md).
+- Staff endpoints live in [`apps/api/internal/staff/AGENTS.md`](../../apps/api/internal/staff/AGENTS.md).
+- Webhook and activity endpoints live in [`apps/api/internal/activity/AGENTS.md`](../../apps/api/internal/activity/AGENTS.md).
+- Dashboard endpoints live in [`apps/api/internal/dashboard/AGENTS.md`](../../apps/api/internal/dashboard/AGENTS.md).
