@@ -9,7 +9,7 @@ IMS is a multi-tenant HR application for managing hourly staff (freelancers, con
 - **Frontend:** Server-rendered HTML + Alpine.js (CDN, no build step)
 - **Messaging:** External webhook integration (WhatsApp/Waha layer is external)
 - **Architecture:** Domain-Driven Design (DDD) + Clean Architecture + Cell-Based Architecture
-- **Router:** gorilla/mux
+- **Router:** go-chi/chi/v5
 - **Go version:** 1.22+
 
 ## Architecture & Conventions
