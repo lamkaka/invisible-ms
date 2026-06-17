@@ -2,7 +2,7 @@
 
 ## Error Handling
 
-- Domain errors are defined in each cell's `*_domain.go` or in `internal/shared/errors.go`
+- Domain errors are defined in each cell's `*_domain.go` or in `apps/api/internal/shared/errors.go`
 - Services return domain errors; controllers translate to HTTP status codes
 - Use Go 1.13+ error wrapping with `%w` for context
 - **HTTP status code mapping:**
@@ -11,7 +11,7 @@
   - `shared.ErrInvalidInput` → 400 Bad Request
   - Internal/DB errors → 500 Internal Server Error
 
-### Shared Error Types (`internal/shared/errors.go`)
+### Shared Error Types (`apps/api/internal/shared/errors.go`)
 - `ErrNotFound` — resource not found
 - `ErrAlreadyExists` — resource already exists
 - `ErrInvalidInput` — invalid input provided
@@ -23,7 +23,7 @@
 
 - Environment variables for all config (Spanner project/instance/database, port, webhook secret, etc.)
 - `.env.example` documents required variables
-- `internal/shared/config.go` loads and validates config
+- `apps/api/internal/shared/config.go` loads and validates config
 - `shared.GetEnv(key, defaultValue)` helper for safe env var reading
 
 ### Config fields:

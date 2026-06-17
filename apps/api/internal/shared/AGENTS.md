@@ -22,7 +22,7 @@ None (standalone cell).
 None (provides shared types used by all cells).
 
 ## API Endpoints
-None. The middleware is used by the router in `cmd/server/main.go`.
+None. The middleware is used by the router in `apps/api/cmd/server/main.go`.
 
 ## Cell-Specific Business Rules
 - Config is loaded once at startup via `shared.LoadConfig()`

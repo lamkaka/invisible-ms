@@ -62,59 +62,79 @@ Handler -> Service -> Domain <- Repository
 
 ```
 ims/
-├── cmd/
-│   ├── server/main.go             # Entry point, wires all cells
-│   ├── migrate/main.go            # Database migration tool (Spanner)
-│   └── setup/main.go              # One-time database setup (instance + database + migrations)
-├── internal/
-│   ├── shared/                    # Shared infrastructure
-│   │   ├── config.go              # Environment variable loading, Spanner client
-│   │   ├── errors.go              # Domain error types (NotFound, AlreadyExists, InvalidInput)
-│   │   └── middleware.go          # HTTP middleware (logging, CORS)
-│   ├── company/                   # Company management cell
-│   │   ├── company_domain.go      # Company aggregate, Role value object, ActionType configuration
-│   │   ├── company_service.go     # CRUD orchestration + action type management
-│   │   ├── company_repository.go  # Spanner repository for companies + roles
-│   │   ├── company_action_type_repository.go  # Spanner repository for action types
-│   │   └── company_handler.go     # REST API handlers for companies, roles, action types
-│   ├── staff/                    # Staff management cell
-│   │   ├── staff_domain.go       # Staff aggregate, role assignment rules
-│   │   ├── staff_service.go      # Orchestration with company role validation
-│   │   ├── staff_repository.go   # Spanner repository with atomic transactions
-│   │   └── staff_handler.go      # REST API handlers for staff
-│   ├── activity/                  # Activity/check-in tracking cell
-│   │   ├── activity_domain.go     # ActivityLog aggregate, message parsing, session calculations
-│   │   ├── activity_webhook_service.go   # Webhook processing orchestration
-│   │   ├── activity_session_service.go   # Session computation and activity queries
-│   │   ├── activity_repository.go        # Spanner repository with atomic check-out validation
-│   │   └── activity_handler.go    # Webhook endpoint + REST activity query handlers
-│   └── dashboard/                 # Dashboard aggregation cell (CQRS read model)
-│       ├── dashboard_domain.go    # Stats value objects (DashboardStats, TodayOverview, etc.)
-│       ├── dashboard_service.go   # Orchestration: query repos, call domain aggregation
-│       ├── dashboard_repository.go       # Read-side Spanner queries with SQL aggregations
-│       ├── dashboard_api_handler.go      # JSON API endpoint for dashboard stats
-│       └── dashboard_web_handler.go      # Server-rendered HTML pages
-├── web/static/
-│   ├── css/style.css              # Dashboard styling (1023 lines)
-│   └── js/app.js                  # Alpine.js components (dashboard, staff, action types)
-├── templates/
-│   ├── layout.html                # Base HTML template with navigation
-│   ├── dashboard.html             # Dashboard page with real-time stats
-│   ├── staff.html               # Staff management page
-│   └── actions.html               # Action type configuration page
-├── migrations/
-│   ├── 001_create_companies.sql           # Companies + company_roles tables
-│   ├── 002_create_staff.sql             # Workers + staff_roles tables
-│   ├── 003_create_activity_logs.sql       # Activity logs table + indexes
-│   └── 004_create_company_action_types.sql # Action types + seed data
-├── nginx/
-│   ├── nginx.conf                 # Reverse proxy config (static files + API proxy)
-│   └── Dockerfile                 # Nginx 1.27-alpine with static assets
-├── Dockerfile                     # Multi-stage Go build (server + migrate binaries)
-├── docker-compose.yml             # Full local stack (4 services)
-├── Makefile                       # Build/run/test/docker targets
-├── go.mod                         # Module: github.com/lamkaka/invisible-ms
-└── .env.example                   # Required environment variables
+├── apps/
+│   ├── api/                          # Go backend
+│   │   ├── cmd/
+│   │   │   ├── server/main.go        # Entry point, wires all cells
+│   │   │   ├── migrate/main.go       # Database migration tool (Spanner)
+│   │   │   └── setup/main.go         # One-time database setup
+│   │   ├── internal/
+│   │   │   ├── shared/               # Shared infrastructure
+│   │   │   │   ├── config.go         # Environment variable loading, Spanner client
+│   │   │   │   ├── errors.go         # Domain error types (NotFound, AlreadyExists, InvalidInput)
+│   │   │   │   └── middleware.go     # HTTP middleware (logging, CORS)
+│   │   │   ├── company/              # Company management cell
+│   │   │   │   ├── company_domain.go # Company aggregate, Role value object, ActionType config
+│   │   │   │   ├── company_service.go # CRUD orchestration + action type management
+│   │   │   │   ├── company_repository.go # Spanner repository for companies + roles
+│   │   │   │   ├── company_action_type_repository.go # Spanner for action types
+│   │   │   │   └── company_controller.go # REST API handlers
+│   │   │   ├── staff/                # Staff management cell
+│   │   │   │   ├── staff_domain.go   # Staff aggregate, role assignment rules
+│   │   │   │   ├── staff_service.go  # Orchestration with company role validation
+│   │   │   │   ├── staff_repository.go # Spanner repository with atomic transactions
+│   │   │   │   └── staff_controller.go # REST API handlers
+│   │   │   ├── activity/             # Activity/check-in tracking cell
+│   │   │   │   ├── activity_domain.go # ActivityLog aggregate, message parsing, sessions
+│   │   │   │   ├── activity_webhook_service.go # Webhook processing orchestration
+│   │   │   │   ├── activity_session_service.go # Session computation and queries
+│   │   │   │   ├── activity_repository.go # Spanner repository with atomic check-out
+│   │   │   │   └── activity_controller.go # Webhook endpoint + REST handlers
+│   │   │   └── dashboard/            # Dashboard aggregation cell (CQRS read model)
+│   │   │       ├── dashboard_domain.go # Stats value objects
+│   │   │       ├── dashboard_service.go # Orchestration: query repos, call domain aggregation
+│   │   │       ├── dashboard_repository.go # Read-side Spanner SQL aggregations
+│   │   │       ├── dashboard_api_controller.go # JSON API endpoint
+│   │   │       └── dashboard_web_controller.go # Server-rendered HTML pages
+│   │   ├── go.mod                    # Module: github.com/lamkaka/invisible-ms
+│   │   └── go.sum
+│   ├── web/                          # Frontend assets
+│   │   ├── templates/
+│   │   │   ├── layout.html           # Base HTML template with navigation
+│   │   │   ├── dashboard.html        # Dashboard page with real-time stats
+│   │   │   ├── staff.html            # Staff management page
+│   │   │   └── actions.html          # Action type configuration page
+│   │   └── static/
+│   │       ├── css/style.css         # Dashboard styling
+│   │       └── js/app.js             # Alpine.js components
+│   └── infra/
+│       └── nginx/
+│           ├── nginx.conf            # Reverse proxy config (static + API)
+│           └── Dockerfile            # Nginx 1.27-alpine with static assets
+├── deployments/
+│   ├── Dockerfile                    # Multi-stage Go build (server + migrate)
+│   ├── docker-compose.yml            # Full local stack (4 services)
+│   ├── Makefile                      # Build/run/test/docker targets
+│   ├── migrations/                   # Spanner DDL migrations
+│   │   ├── 001_create_companies.sql
+│   │   ├── 002_create_staff.sql
+│   │   ├── 003_create_activity_logs.sql
+│   │   └── 004_create_company_action_types.sql
+│   ├── .env.example                  # Required environment variables
+│   └── .dockerignore
+├── docs/
+│   ├── rules/                        # Architecture and development rules
+│   │   ├── 01-architecture.md
+│   │   ├── 02-domain-model.md
+│   │   ├── 03-database.md
+│   │   ├── 04-api-and-webhook.md
+│   │   ├── 05-testing.md
+│   │   └── 06-development.md
+│   └── superpowers/
+│       ├── specs/                    # Design specifications
+│       └── plans/                    # Implementation plans and status
+├── AGENTS.md                         # Agent instructions
+└── apps/api/README.md                # API-specific README
 ```
 
 ## Prerequisites
@@ -192,7 +212,7 @@ export WEBHOOK_SECRET=test-secret
 make migrate
 ```
 
-This creates the Spanner instance and database (if they don't exist), applies all DDL from `migrations/*.sql`, then executes DML seed statements.
+This creates the Spanner instance and database (if they don't exist), applies all DDL from `deployments/migrations/*.sql`, then executes DML seed statements.
 
 ### 4. Start the Server
 
@@ -205,7 +225,7 @@ The server starts on **http://localhost:8080**.
 ### 5. Seed Test Data (Optional)
 
 ```bash
-go run ./cmd/setup
+cd apps/api && go run ./cmd/setup
 ```
 
 Creates sample companies, staff, and activity data for development and testing.
@@ -420,7 +440,7 @@ MVP complete -- production ready for initial deployment.
 
 ## Error Handling
 
-Domain errors are defined in `internal/shared/errors.go` and map to HTTP status codes:
+Domain errors are defined in `apps/api/internal/shared/errors.go` and map to HTTP status codes:
 
 | Error | HTTP Status |
 |-------|-------------|

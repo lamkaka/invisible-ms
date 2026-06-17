@@ -56,13 +56,13 @@ Files use the pattern `{entity}_{role}.go`:
 
 ## Code Organization
 
-- All application code lives under `cmd/` and `internal/` to prevent external imports
+- All application code lives under `apps/api/cmd/` and `apps/api/internal/`
 - Each cell is self-contained with clear boundaries
-- Shared utilities (config, errors, middleware) live in `internal/shared/`
+- Shared utilities (config, errors, middleware) live in `apps/api/internal/shared/`
 
 ## Dependency Injection
 
-- `cmd/server/main.go` wires all dependencies
+- `apps/api/cmd/server/main.go` wires all dependencies
 - Repositories are instantiated with Spanner client
 - Services are instantiated with repository interfaces
 - Controllers are instantiated with service interfaces

@@ -79,7 +79,7 @@ CREATE INDEX activity_logs_by_action ON activity_logs(company_code, action_type,
 
 - Migration files live in `deployments/migrations/` with numeric prefix ordering
 - Each `.sql` file can contain DDL (CREATE/ALTER/DROP) and DML (INSERT/UPDATE/DELETE)
-- `cmd/migrate/main.go` reads migrations, parses by semicolons (respecting string literals), and applies DDL before DML
+- `apps/api/cmd/migrate/main.go` reads migrations, parses by semicolons (respecting string literals), and applies DDL before DML
 - `shared.SplitSQLStatements()` handles the parsing
 - DDL is applied via `UpdateDatabaseDdl` or `CreateDatabase` (first-time)
 - DML is executed via `ReadWriteTransaction`
