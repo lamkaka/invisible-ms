@@ -4,9 +4,54 @@
 Manages tenant companies and their role catalog. Companies are the top-level organizational unit. This cell also manages action type configuration (WhatsApp keyword → action type mappings).
 
 ## Owned Aggregates
-- **Company** (aggregate root): `company_code` (PK), `company_name`, `roles` (map of Role value objects)
-- **Role** (value object): `name`, `hourly_rate`
-- **CompanyActionType** (value object): `action_type`, `keyword`, `is_system`
+
+### Company (Aggregate Root)
+- `company_code` (string, unique) — tenant identifier
+- `company_name` (string)
+- `roles` (collection of Role value objects)
+
+### Role (Value Object)
+- `name` (string) — e.g., "CLEANING", "DELIVERY"
+- `hourly_rate` (decimal) — cost per hour for this role
+
+### CompanyActionType (Value Object)
+- `action_type` (string) — stable identifier stored in `activity_logs.action_type`
+- `keyword` (string) — WhatsApp keyword (e.g., "IN", "OUT")
+- `is_system` (bool) — system action types cannot be deleted
+
+## Database Schema
+
+### Companies Table
+```sql
+CREATE TABLE companies (
+  company_code STRING(50) NOT NULL,
+  company_name STRING(200) NOT NULL,
+) PRIMARY KEY (company_code);
+```
+
+### Company Roles Table
+```sql
+CREATE TABLE company_roles (
+  company_code STRING(50) NOT NULL,
+  role_name STRING(50) NOT NULL,
+  hourly_rate FLOAT64 NOT NULL,
+) PRIMARY KEY (company_code, role_name),
+  INTERLEAVE IN PARENT companies ON DELETE CASCADE;
+```
+
+### Company Action Types Table
+```sql
+CREATE TABLE company_action_types (
+  company_code STRING(50) NOT NULL,
+  action_type STRING(50) NOT NULL,
+  keyword STRING(20) NOT NULL,
+  is_system BOOL NOT NULL,
+) PRIMARY KEY (company_code, action_type),
+  INTERLEAVE IN PARENT companies ON DELETE CASCADE;
+
+CREATE UNIQUE INDEX company_action_types_by_keyword
+  ON company_action_types(company_code, keyword);
+```
 
 ## File Inventory
 
