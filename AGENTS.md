@@ -41,13 +41,13 @@ See [deployments/AGENTS.md](deployments/AGENTS.md) for Docker Compose, migration
 
 | If you are editing... | Read first |
 |---|---|
-| A domain model | Cell `AGENTS.md` + `docs/rules/02-domain-model.md` |
+| A domain model | Cell `AGENTS.md` |
 | A service or use case | Cell `AGENTS.md` + `docs/rules/01-architecture.md` |
 | A controller / HTTP handler | Cell `AGENTS.md` + `docs/rules/04-api-and-webhook.md` |
 | A repository / Spanner query | Cell `AGENTS.md` + `docs/rules/03-database.md` |
 | A test file | Cell `AGENTS.md` + `docs/rules/05-testing.md` |
 | The main server wiring | `apps/api/cmd/server/main.go` |
-| A migration file | `docs/rules/03-database.md` |
+| A migration file | `docs/rules/03-database.md` + owning Cell `AGENTS.md` |
 | Config or env vars | `docs/rules/06-development.md` |
 | Multiple or cross-cutting | `docs/rules/01-architecture.md` first |
 

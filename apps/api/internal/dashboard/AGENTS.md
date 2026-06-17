@@ -35,15 +35,30 @@ None (read-only aggregation). Consumes data from `activity_logs`, `staff`, and `
 | GET | `/staff` | HTML staff management page |
 | GET | `/actions` | HTML action type management page |
 
+## Query Patterns
+
+The dashboard cell relies on SQL aggregation queries against `activity_logs`, `staff`, and `company_roles` tables:
+
+- Session pairing: Use correlated subqueries to pair CHECK_IN with next CHECK_OUT
+- Cost calculation: JOIN with `company_roles` to get hourly_rate in same query
+- Aggregations: Use `SUM`, `COUNT`, `AVG` in SQL, not in Go code
+- Time-based filtering: Use `TIMESTAMP_DIFF` for duration calculations
+
+### Index Usage
+
+- `activity_logs_by_staff` — querying activity per worker with time range
+- `activity_logs_by_company` — querying activity per company with time range
+- `activity_logs_by_action` — querying open check-ins per company
+
 ## Cell-Specific Business Rules
 - Templates are parsed once at controller creation time (not per-request)
 - All queries use Spanner `Single()` read (no transactions needed for read-only)
-- Session pairing is done in SQL using correlated subqueries (not in Go)
 - Overtime threshold is configurable; default is 8 hours per day
-- Cost calculation joins with `company_roles` for hourly rates within the SQL query
 - Currently-working detection: latest CHECK_IN per staff+role with no following CHECK_OUT
 - `company_code` query parameter is required for most queries (multi-tenant isolation)
 - All queries filter by company_code to prevent cross-tenant data leakage
 
 ## Links
 - Architecture conventions: [docs/rules/01-architecture.md](../../../../docs/rules/01-architecture.md)
+- Database conventions: [docs/rules/03-database.md](../../../../docs/rules/03-database.md) (query guidance, index principles)
+- API and webhook conventions: [docs/rules/04-api-and-webhook.md](../../../../docs/rules/04-api-and-webhook.md) (controller responsibilities)

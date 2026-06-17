@@ -4,7 +4,33 @@
 Records and tracks worker activity logs (check-in, check-out). Processes incoming WhatsApp webhook messages, parses them against company-configured keywords, and computes work sessions with duration and cost.
 
 ## Owned Aggregates
-- **ActivityLog** (aggregate root): `log_id` (UUID, PK), `staff_id`, `company_code`, `role`, `action_type`, `timestamp`, `metadata`
+
+### ActivityLog (Aggregate Root)
+- `log_id` (string, UUID)
+- `staff_id` (string)
+- `company_code` (string)
+- `role` (string) — the role being worked
+- `action_type` (enum) — CHECK_IN, CHECK_OUT, BREAK_START, BREAK_END, OVERTIME_START, etc.
+- `timestamp` (timestamp)
+- `metadata` (JSON, optional) — extra context for future action types
+
+## Database Schema
+
+```sql
+CREATE TABLE activity_logs (
+  log_id STRING(36) NOT NULL,
+  staff_id STRING(36) NOT NULL,
+  company_code STRING(50) NOT NULL,
+  role STRING(50) NOT NULL,
+  action_type STRING(50) NOT NULL,
+  timestamp TIMESTAMP NOT NULL,
+  metadata JSON,
+) PRIMARY KEY (log_id);
+
+CREATE INDEX activity_logs_by_staff ON activity_logs(staff_id, timestamp);
+CREATE INDEX activity_logs_by_company ON activity_logs(company_code, timestamp);
+CREATE INDEX activity_logs_by_action ON activity_logs(company_code, action_type, timestamp);
+```
 
 ## File Inventory
 
@@ -35,12 +61,65 @@ Records and tracks worker activity logs (check-in, check-out). Processes incomin
 | GET | `/api/activities?staff_id=&company_code=&from=&to=` | List activity logs |
 | GET | `/api/activities/sessions?company_code=&from=&to=` | List computed work sessions |
 
+## Message Processing Flow
+
+### Check-in/Check-out Flow
+1. Worker sends WhatsApp message (e.g., "IN CLEANING" or "OUT")
+2. External gateway (Waha) sends webhook to `POST /webhook/message` with `{ phone, message, company_code }`
+3. App parses the message:
+   - Extracts action (IN/OUT) and optional role
+   - If worker has only one role, "IN" is sufficient
+   - If worker has multiple roles, role must be specified (e.g., "IN CLEANING")
+4. App validates:
+   - Worker exists and is active
+   - Role is assigned to the worker
+   - For CHECK_OUT: worker has an active CHECK_IN for this role
+5. App creates an `ActivityLog` record with the appropriate action type
+6. App responds with confirmation (optional, via webhook response)
+
+### Message Parsing Rules
+- Keywords are case-insensitive (converted to uppercase for matching)
+- Format: `{ACTION} [ROLE]`
+- Valid actions are defined per-company via `CompanyActionType` configuration
+- Default system keywords: `IN` → `CHECK_IN`, `OUT` → `CHECK_OUT`
+- Role is optional if worker has only one assigned role
+- Invalid messages return an error response
+- Messages with more than 2 words are rejected with ErrExtraWords
+
+## WhatsApp Commands
+
+Workers send messages from their phone to a WhatsApp number. The external Waha gateway forwards these as webhook requests to the application.
+
+### Command Format
+
+```
+{KEYWORD} [{ROLE}]
+```
+
+Keywords are case-insensitive.
+
+### Examples
+
+| Message | Action | Notes |
+|---------|--------|-------|
+| `IN CLEANING` | Check in for CLEANING role | Role required when staff has multiple roles |
+| `IN` | Check in for only assigned role | Works when staff has exactly one role |
+| `OUT` | Check out | Ends active session for any role |
+| `BREAK` | Start break | Requires custom action type configuration |
+
+### Default System Actions
+
+| Action Type | Keyword | Description |
+|-------------|---------|-------------|
+| `CHECK_IN` | `IN` | Start a work session |
+| `CHECK_OUT` | `OUT` | End a work session |
+
+Companies can define custom action types (e.g., `BREAK_START`, `OVERTIME_START`) with their own keywords.
+
 ## Cell-Specific Business Rules
-- Webhook requires `X-Webhook-Secret` header (constant-time comparison)
-- Message keywords are case-insensitive, resolved via company-configured keyword map
-- Messages with more than 2 words are rejected
-- Unknown keywords return parse error
-- Role is required if staff has multiple assigned roles; inferred if staff has exactly one
+- Workers are identified by phone number + company code
+- Workers must be active and have at least one role assigned
+- Check-in validates the role exists in the company catalog
 - Check-out validates an active check-in exists atomically (within ReadWriteTransaction)
 - Double check-out (no active check-in) is rejected with `ErrNoActiveCheckIn`
 - Session pairing: in-memory pairing of check-ins → check-outs by staff+role; unpaired check-ins are ignored
@@ -49,3 +128,6 @@ Records and tracks worker activity logs (check-in, check-out). Processes incomin
 
 ## Links
 - Architecture conventions: [docs/rules/01-architecture.md](../../../../docs/rules/01-architecture.md)
+- Domain model: [docs/rules/02-domain-model.md](../../../../docs/rules/02-domain-model.md) (session computation, cross-cell business rules)
+- Database conventions: [docs/rules/03-database.md](../../../../docs/rules/03-database.md) (transaction patterns for atomic check-out)
+- API and webhook conventions: [docs/rules/04-api-and-webhook.md](../../../../docs/rules/04-api-and-webhook.md) (webhook security, controller responsibilities)
