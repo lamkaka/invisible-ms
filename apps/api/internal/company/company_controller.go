@@ -5,7 +5,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/gorilla/mux"
+	"github.com/go-chi/chi/v5"
 
 	"github.com/lamkaka/invisible-ms/internal/shared"
 )
@@ -18,16 +18,24 @@ func NewCompanyController(service *CompanyService) *CompanyController {
 	return &CompanyController{service: service}
 }
 
-func (h *CompanyController) RegisterRoutes(router *mux.Router) {
-	router.HandleFunc("/api/companies", h.ListCompanies).Methods("GET")
-	router.HandleFunc("/api/companies", h.CreateCompany).Methods("POST")
-	router.HandleFunc("/api/companies/{code}", h.GetCompany).Methods("GET")
-	router.HandleFunc("/api/companies/{code}/roles", h.AddRole).Methods("POST")
-	router.HandleFunc("/api/companies/{code}/roles/{role}", h.RemoveRole).Methods("DELETE")
-	router.HandleFunc("/api/companies/{code}/action-types", h.ListActionTypes).Methods("GET")
-	router.HandleFunc("/api/companies/{code}/action-types", h.CreateActionType).Methods("POST")
-	router.HandleFunc("/api/companies/{code}/action-types/{action}", h.UpdateActionTypeKeyword).Methods("PUT")
-	router.HandleFunc("/api/companies/{code}/action-types/{action}", h.DeleteActionType).Methods("DELETE")
+func (h *CompanyController) RegisterRoutes(r chi.Router) {
+	r.Route("/api/companies", func(r chi.Router) {
+		r.Get("/", h.ListCompanies)
+		r.Post("/", h.CreateCompany)
+		r.Route("/{code}", func(r chi.Router) {
+			r.Get("/", h.GetCompany)
+			r.Route("/roles", func(r chi.Router) {
+				r.Post("/", h.AddRole)
+				r.Delete("/{role}", h.RemoveRole)
+			})
+			r.Route("/action-types", func(r chi.Router) {
+				r.Get("/", h.ListActionTypes)
+				r.Post("/", h.CreateActionType)
+				r.Put("/{action}", h.UpdateActionTypeKeyword)
+				r.Delete("/{action}", h.DeleteActionType)
+			})
+		})
+	})
 }
 
 func (h *CompanyController) ListCompanies(w http.ResponseWriter, r *http.Request) {
@@ -68,8 +76,7 @@ func (h *CompanyController) CreateCompany(w http.ResponseWriter, r *http.Request
 }
 
 func (h *CompanyController) GetCompany(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	code := vars["code"]
+	code := chi.URLParam(r, "code")
 
 	company, err := h.service.GetCompany(r.Context(), code)
 	if err != nil {
@@ -86,8 +93,7 @@ func (h *CompanyController) GetCompany(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *CompanyController) AddRole(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	code := vars["code"]
+	code := chi.URLParam(r, "code")
 
 	var req struct {
 		RoleName   string  `json:"role_name"`
@@ -117,9 +123,8 @@ func (h *CompanyController) AddRole(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *CompanyController) RemoveRole(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	code := vars["code"]
-	role := vars["role"]
+	code := chi.URLParam(r, "code")
+	role := chi.URLParam(r, "role")
 
 	err := h.service.RemoveRole(r.Context(), code, role)
 	if err != nil {
@@ -135,8 +140,7 @@ func (h *CompanyController) RemoveRole(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *CompanyController) ListActionTypes(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	code := vars["code"]
+	code := chi.URLParam(r, "code")
 
 	actionTypes, err := h.service.ListActionTypes(r.Context(), code)
 	if err != nil {
@@ -153,8 +157,7 @@ func (h *CompanyController) ListActionTypes(w http.ResponseWriter, r *http.Reque
 }
 
 func (h *CompanyController) CreateActionType(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	code := vars["code"]
+	code := chi.URLParam(r, "code")
 
 	var req struct {
 		ActionType string `json:"action_type"`
@@ -188,9 +191,8 @@ func (h *CompanyController) CreateActionType(w http.ResponseWriter, r *http.Requ
 }
 
 func (h *CompanyController) UpdateActionTypeKeyword(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	code := vars["code"]
-	action := vars["action"]
+	code := chi.URLParam(r, "code")
+	action := chi.URLParam(r, "action")
 
 	var req struct {
 		Keyword string `json:"keyword"`
@@ -223,9 +225,8 @@ func (h *CompanyController) UpdateActionTypeKeyword(w http.ResponseWriter, r *ht
 }
 
 func (h *CompanyController) DeleteActionType(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	code := vars["code"]
-	action := vars["action"]
+	code := chi.URLParam(r, "code")
+	action := chi.URLParam(r, "action")
 
 	err := h.service.DeleteActionType(r.Context(), code, action)
 	if err != nil {

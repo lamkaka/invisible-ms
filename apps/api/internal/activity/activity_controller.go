@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gorilla/mux"
+	"github.com/go-chi/chi/v5"
 
 	"github.com/lamkaka/invisible-ms/internal/shared"
 )
@@ -26,10 +26,12 @@ func NewActivityController(webhookService *WebhookService, sessionService *Sessi
 	}
 }
 
-func (h *ActivityController) RegisterRoutes(router *mux.Router) {
-	router.HandleFunc("/webhook/message", h.HandleWebhook).Methods("POST")
-	router.HandleFunc("/api/activities", h.ListActivities).Methods("GET")
-	router.HandleFunc("/api/activities/sessions", h.ListSessions).Methods("GET")
+func (h *ActivityController) RegisterRoutes(r chi.Router) {
+	r.Post("/webhook/message", h.HandleWebhook)
+	r.Route("/api/activities", func(r chi.Router) {
+		r.Get("/", h.ListActivities)
+		r.Get("/sessions", h.ListSessions)
+	})
 }
 
 func (h *ActivityController) HandleWebhook(w http.ResponseWriter, r *http.Request) {

@@ -4,8 +4,8 @@ go 1.26.4
 
 require (
 	cloud.google.com/go/spanner v1.92.0
+	github.com/go-chi/chi/v5 v5.3.0
 	github.com/google/uuid v1.6.0
-	github.com/gorilla/mux v1.8.1
 	google.golang.org/api v0.283.0
 	google.golang.org/grpc v1.81.1
 )
@@ -26,7 +26,6 @@ require (
 	github.com/envoyproxy/go-control-plane/envoy v1.37.0 // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.3.3 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
-	github.com/go-chi/chi/v5 v5.3.0 // indirect
 	github.com/go-jose/go-jose/v4 v4.1.4 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect

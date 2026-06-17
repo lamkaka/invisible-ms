@@ -5,7 +5,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/gorilla/mux"
+	"github.com/go-chi/chi/v5"
 
 	"github.com/lamkaka/invisible-ms/internal/shared"
 )
@@ -18,12 +18,18 @@ func NewStaffController(service *StaffService) *StaffController {
 	return &StaffController{service: service}
 }
 
-func (h *StaffController) RegisterRoutes(router *mux.Router) {
-	router.HandleFunc("/api/staff", h.ListStaff).Methods("GET")
-	router.HandleFunc("/api/staff", h.CreateStaff).Methods("POST")
-	router.HandleFunc("/api/staff/{id}", h.GetStaff).Methods("GET")
-	router.HandleFunc("/api/staff/{id}/roles", h.AssignRole).Methods("POST")
-	router.HandleFunc("/api/staff/{id}/roles/{role}", h.UnassignRole).Methods("DELETE")
+func (h *StaffController) RegisterRoutes(r chi.Router) {
+	r.Route("/api/staff", func(r chi.Router) {
+		r.Get("/", h.ListStaff)
+		r.Post("/", h.CreateStaff)
+		r.Route("/{id}", func(r chi.Router) {
+			r.Get("/", h.GetStaff)
+			r.Route("/roles", func(r chi.Router) {
+				r.Post("/", h.AssignRole)
+				r.Delete("/{role}", h.UnassignRole)
+			})
+		})
+	})
 }
 
 func (h *StaffController) ListStaff(w http.ResponseWriter, r *http.Request) {
@@ -73,8 +79,7 @@ func (h *StaffController) CreateStaff(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *StaffController) GetStaff(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id := vars["id"]
+	id := chi.URLParam(r, "id")
 
 	staff, err := h.service.GetStaff(r.Context(), id)
 	if err != nil {
@@ -91,8 +96,7 @@ func (h *StaffController) GetStaff(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *StaffController) AssignRole(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id := vars["id"]
+	id := chi.URLParam(r, "id")
 
 	var req struct {
 		RoleName string `json:"role_name"`
@@ -121,9 +125,8 @@ func (h *StaffController) AssignRole(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *StaffController) UnassignRole(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id := vars["id"]
-	role := vars["role"]
+	id := chi.URLParam(r, "id")
+	role := chi.URLParam(r, "role")
 
 	err := h.service.UnassignRole(r.Context(), id, role)
 	if err != nil {

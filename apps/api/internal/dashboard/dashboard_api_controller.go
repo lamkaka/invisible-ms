@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/gorilla/mux"
+	"github.com/go-chi/chi/v5"
 )
 
 type DashboardAPIController struct {
@@ -15,8 +15,8 @@ func NewDashboardAPIController(service *DashboardService) *DashboardAPIControlle
 	return &DashboardAPIController{service: service}
 }
 
-func (h *DashboardAPIController) RegisterRoutes(router *mux.Router) {
-	router.HandleFunc("/api/dashboard/stats", h.GetStats).Methods("GET")
+func (h *DashboardAPIController) RegisterRoutes(r chi.Router) {
+	r.Get("/api/dashboard/stats", h.GetStats)
 }
 
 func (h *DashboardAPIController) GetStats(w http.ResponseWriter, r *http.Request) {

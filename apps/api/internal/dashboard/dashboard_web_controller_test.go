@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gorilla/mux"
+	"github.com/go-chi/chi/v5"
 )
 
 // helper to create minimal template files for testing
@@ -139,7 +139,7 @@ func TestDashboardWebController_DashboardPage_Success(t *testing.T) {
 		t.Fatalf("failed to create web controller: %v", err)
 	}
 
-	router := mux.NewRouter()
+	router := chi.NewRouter()
 	controller.RegisterRoutes(router)
 
 	req := httptest.NewRequest("GET", "/dashboard?company_code=ACME", nil)
@@ -167,7 +167,7 @@ func TestDashboardWebController_StaffPage_Success(t *testing.T) {
 		t.Fatalf("failed to create web controller: %v", err)
 	}
 
-	router := mux.NewRouter()
+	router := chi.NewRouter()
 	controller.RegisterRoutes(router)
 
 	req := httptest.NewRequest("GET", "/staff", nil)
@@ -195,7 +195,7 @@ func TestDashboardWebController_ActionsPage_Success(t *testing.T) {
 		t.Fatalf("failed to create web controller: %v", err)
 	}
 
-	router := mux.NewRouter()
+	router := chi.NewRouter()
 	controller.RegisterRoutes(router)
 
 	req := httptest.NewRequest("GET", "/actions", nil)
@@ -225,7 +225,7 @@ func TestDashboardWebController_DashboardPage_ServiceError(t *testing.T) {
 		t.Fatalf("failed to create web controller: %v", err)
 	}
 
-	router := mux.NewRouter()
+	router := chi.NewRouter()
 	controller.RegisterRoutes(router)
 
 	req := httptest.NewRequest("GET", "/dashboard?company_code=ACME", nil)
