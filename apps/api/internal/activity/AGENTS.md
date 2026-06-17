@@ -84,9 +84,9 @@ CREATE INDEX activity_logs_by_action ON activity_logs(company_code, action_type,
 - Default system keywords: `IN` → `CHECK_IN`, `OUT` → `CHECK_OUT`
 - Role is optional if worker has only one assigned role
 - Invalid messages return an error response
+- Messages with more than 2 words are rejected with ErrExtraWords
 
 ## Cell-Specific Business Rules
-- Webhook requires `X-Webhook-Secret` header (constant-time comparison)
 - Check-out validates an active check-in exists atomically (within ReadWriteTransaction)
 - Double check-out (no active check-in) is rejected with `ErrNoActiveCheckIn`
 - Session pairing: in-memory pairing of check-ins → check-outs by staff+role; unpaired check-ins are ignored
