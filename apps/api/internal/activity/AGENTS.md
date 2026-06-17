@@ -87,10 +87,6 @@ CREATE INDEX activity_logs_by_action ON activity_logs(company_code, action_type,
 
 ## Cell-Specific Business Rules
 - Webhook requires `X-Webhook-Secret` header (constant-time comparison)
-- Message keywords are case-insensitive, resolved via company-configured keyword map
-- Messages with more than 2 words are rejected
-- Unknown keywords return parse error
-- Role is required if staff has multiple assigned roles; inferred if staff has exactly one
 - Check-out validates an active check-in exists atomically (within ReadWriteTransaction)
 - Double check-out (no active check-in) is rejected with `ErrNoActiveCheckIn`
 - Session pairing: in-memory pairing of check-ins → check-outs by staff+role; unpaired check-ins are ignored
