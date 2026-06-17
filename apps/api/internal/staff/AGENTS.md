@@ -80,3 +80,5 @@ CREATE TABLE staff_roles (
 
 ## Links
 - Architecture conventions: [docs/rules/01-architecture.md](../../../../docs/rules/01-architecture.md)
+- Domain model: [docs/rules/02-domain-model.md](../../../../docs/rules/02-domain-model.md) (cross-cell role validation rules)
+- Database conventions: [docs/rules/03-database.md](../../../../docs/rules/03-database.md) (transaction patterns for multi-table staff+roles writes)

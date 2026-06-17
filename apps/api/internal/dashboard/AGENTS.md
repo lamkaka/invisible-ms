@@ -60,3 +60,5 @@ The dashboard cell relies on SQL aggregation queries against `activity_logs`, `s
 
 ## Links
 - Architecture conventions: [docs/rules/01-architecture.md](../../../../docs/rules/01-architecture.md)
+- Database conventions: [docs/rules/03-database.md](../../../../docs/rules/03-database.md) (query guidance, index principles)
+- API and webhook conventions: [docs/rules/04-api-and-webhook.md](../../../../docs/rules/04-api-and-webhook.md) (controller responsibilities)

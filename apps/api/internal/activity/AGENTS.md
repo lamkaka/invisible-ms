@@ -95,3 +95,6 @@ CREATE INDEX activity_logs_by_action ON activity_logs(company_code, action_type,
 
 ## Links
 - Architecture conventions: [docs/rules/01-architecture.md](../../../../docs/rules/01-architecture.md)
+- Domain model: [docs/rules/02-domain-model.md](../../../../docs/rules/02-domain-model.md) (session computation, cross-cell business rules)
+- Database conventions: [docs/rules/03-database.md](../../../../docs/rules/03-database.md) (transaction patterns for atomic check-out)
+- API and webhook conventions: [docs/rules/04-api-and-webhook.md](../../../../docs/rules/04-api-and-webhook.md) (webhook security, controller responsibilities)

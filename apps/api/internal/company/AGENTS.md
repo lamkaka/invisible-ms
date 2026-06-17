@@ -99,3 +99,4 @@ CREATE UNIQUE INDEX company_action_types_by_keyword
 
 ## Links
 - Architecture conventions: [docs/rules/01-architecture.md](../../../../docs/rules/01-architecture.md)
+- Database conventions: [docs/rules/03-database.md](../../../../docs/rules/03-database.md) (migration conventions, interleaved tables)
