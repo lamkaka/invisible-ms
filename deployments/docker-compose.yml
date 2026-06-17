@@ -13,9 +13,9 @@ services:
 
   migrate:
     build:
-      context: .
-      dockerfile: Dockerfile
-    command: /app/migrate
+      context: ..
+      dockerfile: deployments/Dockerfile
+    command: /app/api/migrate
     depends_on:
       - spanner-emulator
     environment:
@@ -24,8 +24,8 @@ services:
 
   app:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: deployments/Dockerfile
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -43,8 +43,8 @@ services:
 
   nginx:
     build:
-      context: .
-      dockerfile: nginx/Dockerfile
+      context: ..
+      dockerfile: apps/infra/nginx/Dockerfile
     depends_on:
       app:
         condition: service_healthy

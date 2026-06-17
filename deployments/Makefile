@@ -1,16 +1,16 @@
 .PHONY: build run test migrate docker-build docker-up docker-down docker-logs docker-restart
 
 build:
-	go build -o bin/server ./cmd/server
+	cd ../apps/api && go build -o bin/server ./cmd/server
 
 run:
-	go run ./cmd/server
+	cd ../apps/api && go run ./cmd/server
 
 test:
-	go test ./...
+	cd ../apps/api && go test ./...
 
 migrate:
-	go run ./cmd/migrate
+	cd ../apps/api && go run ./cmd/migrate
 
 docker-build:
 	docker compose build
