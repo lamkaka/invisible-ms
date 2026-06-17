@@ -39,3 +39,10 @@ Use single `Apply` for:
 - Staff schema lives in [`apps/api/internal/staff/AGENTS.md`](../../apps/api/internal/staff/AGENTS.md).
 - Activity log schema lives in [`apps/api/internal/activity/AGENTS.md`](../../apps/api/internal/activity/AGENTS.md).
 - Dashboard query patterns live in [`apps/api/internal/dashboard/AGENTS.md`](../../apps/api/internal/dashboard/AGENTS.md).
+
+## Design Decisions
+
+- **Interleaved tables**: `company_roles`, `company_action_types`, and `staff_roles` are interleaved in their parent tables for locality and cascade deletes.
+- **Denormalized `company_code`** in `staff_roles` enables efficient interleaving and prevents cross-tenant role assignments.
+- **SQL aggregations**: Dashboard stats are computed in SQL (not in application memory) to handle large datasets efficiently.
+- **Atomic check-out**: Check-out operations use a `ReadWriteTransaction` to verify active check-in and create the log atomically, preventing double-check-out race conditions.
