@@ -1,10 +1,10 @@
-# IMS - Hourly Staff Management System
+# Invisible Management System
 
-Multi-tenant HR application for managing hourly staff (freelancers, contractors, part-time, shift staff). Workers check in and out via WhatsApp using keyword commands. The system tracks activity logs, computes hours and costs per role, and provides a management dashboard.
+Multi-tenant HR application for managing hourly staff (freelancers, contractors, part-time, shift staff). Staff check in and out via WhatsApp using keyword commands. The system tracks activity logs, computes hours and costs per role, and provides a management dashboard.
 
 ## Architecture
 
-The application follows Domain-Driven Design (DDD) with Clean Architecture and Cell-Based Architecture. Each bounded context is a self-contained cell with strict dependency rules.
+The application follows Cell-Based Domain-Driven Design (DDD) with Clean Architecture. Each bounded context is a self-contained cell with strict dependency rules.
 
 ```
                      +---------------+
@@ -36,8 +36,8 @@ See [docs/rules/01-architecture.md](docs/rules/01-architecture.md) for the full 
 The fastest way to get running is with Docker Compose, which starts a complete stack with Spanner emulator, database migrations, the Go API server, and Nginx reverse proxy.
 
 ```bash
-git clone <repo-url> ims
-cd ims
+git clone <repo-url>
+cd invisible-ms
 cp .env.example .env
 make docker-up
 ```
