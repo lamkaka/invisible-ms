@@ -21,7 +21,7 @@ func writeTestTemplate(t *testing.T, dir, name, content string) {
 	}
 }
 
-// mockRepo for web handler tests
+// mockRepo for web controller tests
 type webMockDashboardRepo struct {
 	currentlyWorking []ActiveStaff
 	checkedInToday   int
@@ -122,7 +122,7 @@ func writeAllTemplates(t *testing.T, dir string) {
 	writeTestTemplate(t, dir, "actions.html", `{{template "layout.html" .}}{{define "content"}}Actions Content{{end}}`)
 }
 
-func TestDashboardWebHandler_DashboardPage_Success(t *testing.T) {
+func TestDashboardWebController_DashboardPage_Success(t *testing.T) {
 	dir := t.TempDir()
 	writeAllTemplates(t, dir)
 
@@ -134,13 +134,13 @@ func TestDashboardWebHandler_DashboardPage_Success(t *testing.T) {
 	repo.totalHoursToday = 8.5
 
 	service := NewDashboardService(repo)
-	handler, err := NewDashboardWebHandler(service, dir)
+	controller, err := NewDashboardWebController(service, dir)
 	if err != nil {
-		t.Fatalf("failed to create web handler: %v", err)
+		t.Fatalf("failed to create web controller: %v", err)
 	}
 
 	router := mux.NewRouter()
-	handler.RegisterRoutes(router)
+	controller.RegisterRoutes(router)
 
 	req := httptest.NewRequest("GET", "/dashboard?company_code=ACME", nil)
 	rec := httptest.NewRecorder()
@@ -156,19 +156,19 @@ func TestDashboardWebHandler_DashboardPage_Success(t *testing.T) {
 	}
 }
 
-func TestDashboardWebHandler_StaffPage_Success(t *testing.T) {
+func TestDashboardWebController_StaffPage_Success(t *testing.T) {
 	dir := t.TempDir()
 	writeAllTemplates(t, dir)
 
 	repo := newWebMockDashboardRepo()
 	service := NewDashboardService(repo)
-	handler, err := NewDashboardWebHandler(service, dir)
+	controller, err := NewDashboardWebController(service, dir)
 	if err != nil {
-		t.Fatalf("failed to create web handler: %v", err)
+		t.Fatalf("failed to create web controller: %v", err)
 	}
 
 	router := mux.NewRouter()
-	handler.RegisterRoutes(router)
+	controller.RegisterRoutes(router)
 
 	req := httptest.NewRequest("GET", "/staff", nil)
 	rec := httptest.NewRecorder()
@@ -184,19 +184,19 @@ func TestDashboardWebHandler_StaffPage_Success(t *testing.T) {
 	}
 }
 
-func TestDashboardWebHandler_ActionsPage_Success(t *testing.T) {
+func TestDashboardWebController_ActionsPage_Success(t *testing.T) {
 	dir := t.TempDir()
 	writeAllTemplates(t, dir)
 
 	repo := newWebMockDashboardRepo()
 	service := NewDashboardService(repo)
-	handler, err := NewDashboardWebHandler(service, dir)
+	controller, err := NewDashboardWebController(service, dir)
 	if err != nil {
-		t.Fatalf("failed to create web handler: %v", err)
+		t.Fatalf("failed to create web controller: %v", err)
 	}
 
 	router := mux.NewRouter()
-	handler.RegisterRoutes(router)
+	controller.RegisterRoutes(router)
 
 	req := httptest.NewRequest("GET", "/actions", nil)
 	rec := httptest.NewRecorder()
@@ -212,7 +212,7 @@ func TestDashboardWebHandler_ActionsPage_Success(t *testing.T) {
 	}
 }
 
-func TestDashboardWebHandler_DashboardPage_ServiceError(t *testing.T) {
+func TestDashboardWebController_DashboardPage_ServiceError(t *testing.T) {
 	dir := t.TempDir()
 	writeAllTemplates(t, dir)
 
@@ -220,13 +220,13 @@ func TestDashboardWebHandler_DashboardPage_ServiceError(t *testing.T) {
 	repo.shouldError = true
 
 	service := NewDashboardService(repo)
-	handler, err := NewDashboardWebHandler(service, dir)
+	controller, err := NewDashboardWebController(service, dir)
 	if err != nil {
-		t.Fatalf("failed to create web handler: %v", err)
+		t.Fatalf("failed to create web controller: %v", err)
 	}
 
 	router := mux.NewRouter()
-	handler.RegisterRoutes(router)
+	controller.RegisterRoutes(router)
 
 	req := httptest.NewRequest("GET", "/dashboard?company_code=ACME", nil)
 	rec := httptest.NewRecorder()

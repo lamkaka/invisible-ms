@@ -16,6 +16,8 @@ type Config struct {
 	Port               int
 	WebhookSecret      string
 	CORSAllowedOrigins string
+	TemplatesPath      string
+	StaticPath         string
 }
 
 func LoadConfig() (*Config, error) {
@@ -31,6 +33,8 @@ func LoadConfig() (*Config, error) {
 		Port:               port,
 		WebhookSecret:      GetEnv("WEBHOOK_SECRET", ""),
 		CORSAllowedOrigins: GetEnv("CORS_ALLOWED_ORIGINS", "*"),
+		TemplatesPath:      GetEnv("TEMPLATES_PATH", "../web/templates"),
+		StaticPath:         GetEnv("STATIC_PATH", "../web/static"),
 	}, nil
 }
 

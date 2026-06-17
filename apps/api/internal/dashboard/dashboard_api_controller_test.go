@@ -105,7 +105,7 @@ func (e *testError) Error() string { return e.msg }
 
 // --- Tests ---
 
-func TestDashboardAPIHandler_GetStats_Success(t *testing.T) {
+func TestDashboardAPIController_GetStats_Success(t *testing.T) {
 	repo := newMockDashboardRepo()
 	repo.currentlyWorking = []ActiveStaff{
 		{StaffID: "w1", StaffName: "John", Role: "CLEANING", CheckIn: time.Now().Add(-2 * time.Hour), Hours: 2},
@@ -114,9 +114,9 @@ func TestDashboardAPIHandler_GetStats_Success(t *testing.T) {
 	repo.totalHoursToday = 12.5
 
 	service := NewDashboardService(repo)
-	handler := NewDashboardAPIHandler(service)
+	controller := NewDashboardAPIController(service)
 	router := mux.NewRouter()
-	handler.RegisterRoutes(router)
+	controller.RegisterRoutes(router)
 
 	req := httptest.NewRequest("GET", "/api/dashboard/stats?company_code=ACME", nil)
 	rec := httptest.NewRecorder()
@@ -142,12 +142,12 @@ func TestDashboardAPIHandler_GetStats_Success(t *testing.T) {
 	}
 }
 
-func TestDashboardAPIHandler_GetStats_NoCompanyCode(t *testing.T) {
+func TestDashboardAPIController_GetStats_NoCompanyCode(t *testing.T) {
 	repo := newMockDashboardRepo()
 	service := NewDashboardService(repo)
-	handler := NewDashboardAPIHandler(service)
+	controller := NewDashboardAPIController(service)
 	router := mux.NewRouter()
-	handler.RegisterRoutes(router)
+	controller.RegisterRoutes(router)
 
 	// Should still succeed with empty company code (some repos return all data)
 	req := httptest.NewRequest("GET", "/api/dashboard/stats", nil)
@@ -159,14 +159,14 @@ func TestDashboardAPIHandler_GetStats_NoCompanyCode(t *testing.T) {
 	}
 }
 
-func TestDashboardAPIHandler_GetStats_InternalError(t *testing.T) {
+func TestDashboardAPIController_GetStats_InternalError(t *testing.T) {
 	repo := newMockDashboardRepo()
 	repo.shouldError = true
 
 	service := NewDashboardService(repo)
-	handler := NewDashboardAPIHandler(service)
+	controller := NewDashboardAPIController(service)
 	router := mux.NewRouter()
-	handler.RegisterRoutes(router)
+	controller.RegisterRoutes(router)
 
 	req := httptest.NewRequest("GET", "/api/dashboard/stats?company_code=ACME", nil)
 	rec := httptest.NewRecorder()

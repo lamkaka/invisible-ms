@@ -12,27 +12,27 @@ import (
 	"github.com/lamkaka/invisible-ms/internal/shared"
 )
 
-type ActivityHandler struct {
+type ActivityController struct {
 	webhookService *WebhookService
 	sessionService *SessionService
 	webhookSecret  string
 }
 
-func NewActivityHandler(webhookService *WebhookService, sessionService *SessionService, webhookSecret string) *ActivityHandler {
-	return &ActivityHandler{
+func NewActivityController(webhookService *WebhookService, sessionService *SessionService, webhookSecret string) *ActivityController {
+	return &ActivityController{
 		webhookService: webhookService,
 		sessionService: sessionService,
 		webhookSecret:  webhookSecret,
 	}
 }
 
-func (h *ActivityHandler) RegisterRoutes(router *mux.Router) {
+func (h *ActivityController) RegisterRoutes(router *mux.Router) {
 	router.HandleFunc("/webhook/message", h.HandleWebhook).Methods("POST")
 	router.HandleFunc("/api/activities", h.ListActivities).Methods("GET")
 	router.HandleFunc("/api/activities/sessions", h.ListSessions).Methods("GET")
 }
 
-func (h *ActivityHandler) HandleWebhook(w http.ResponseWriter, r *http.Request) {
+func (h *ActivityController) HandleWebhook(w http.ResponseWriter, r *http.Request) {
 	secret := r.Header.Get("X-Webhook-Secret")
 	if subtle.ConstantTimeCompare([]byte(secret), []byte(h.webhookSecret)) != 1 {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
@@ -65,7 +65,7 @@ func (h *ActivityHandler) HandleWebhook(w http.ResponseWriter, r *http.Request) 
 	json.NewEncoder(w).Encode(log)
 }
 
-func (h *ActivityHandler) ListActivities(w http.ResponseWriter, r *http.Request) {
+func (h *ActivityController) ListActivities(w http.ResponseWriter, r *http.Request) {
 	staffID := r.URL.Query().Get("staff_id")
 	companyCode := r.URL.Query().Get("company_code")
 
@@ -100,7 +100,7 @@ func (h *ActivityHandler) ListActivities(w http.ResponseWriter, r *http.Request)
 	json.NewEncoder(w).Encode(logs)
 }
 
-func (h *ActivityHandler) ListSessions(w http.ResponseWriter, r *http.Request) {
+func (h *ActivityController) ListSessions(w http.ResponseWriter, r *http.Request) {
 	companyCode := r.URL.Query().Get("company_code")
 
 	from, err := parseTimeParam(r.URL.Query().Get("from"), time.Now().AddDate(0, 0, -7))

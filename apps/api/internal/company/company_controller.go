@@ -10,15 +10,15 @@ import (
 	"github.com/lamkaka/invisible-ms/internal/shared"
 )
 
-type CompanyHandler struct {
+type CompanyController struct {
 	service *CompanyService
 }
 
-func NewCompanyHandler(service *CompanyService) *CompanyHandler {
-	return &CompanyHandler{service: service}
+func NewCompanyController(service *CompanyService) *CompanyController {
+	return &CompanyController{service: service}
 }
 
-func (h *CompanyHandler) RegisterRoutes(router *mux.Router) {
+func (h *CompanyController) RegisterRoutes(router *mux.Router) {
 	router.HandleFunc("/api/companies", h.ListCompanies).Methods("GET")
 	router.HandleFunc("/api/companies", h.CreateCompany).Methods("POST")
 	router.HandleFunc("/api/companies/{code}", h.GetCompany).Methods("GET")
@@ -30,7 +30,7 @@ func (h *CompanyHandler) RegisterRoutes(router *mux.Router) {
 	router.HandleFunc("/api/companies/{code}/action-types/{action}", h.DeleteActionType).Methods("DELETE")
 }
 
-func (h *CompanyHandler) ListCompanies(w http.ResponseWriter, r *http.Request) {
+func (h *CompanyController) ListCompanies(w http.ResponseWriter, r *http.Request) {
 	companies, err := h.service.ListCompanies(r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -41,7 +41,7 @@ func (h *CompanyHandler) ListCompanies(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(companies)
 }
 
-func (h *CompanyHandler) CreateCompany(w http.ResponseWriter, r *http.Request) {
+func (h *CompanyController) CreateCompany(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		CompanyCode string `json:"company_code"`
 		CompanyName string `json:"company_name"`
@@ -67,7 +67,7 @@ func (h *CompanyHandler) CreateCompany(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(company)
 }
 
-func (h *CompanyHandler) GetCompany(w http.ResponseWriter, r *http.Request) {
+func (h *CompanyController) GetCompany(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	code := vars["code"]
 
@@ -85,7 +85,7 @@ func (h *CompanyHandler) GetCompany(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(company)
 }
 
-func (h *CompanyHandler) AddRole(w http.ResponseWriter, r *http.Request) {
+func (h *CompanyController) AddRole(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	code := vars["code"]
 
@@ -116,7 +116,7 @@ func (h *CompanyHandler) AddRole(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
-func (h *CompanyHandler) RemoveRole(w http.ResponseWriter, r *http.Request) {
+func (h *CompanyController) RemoveRole(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	code := vars["code"]
 	role := vars["role"]
@@ -134,7 +134,7 @@ func (h *CompanyHandler) RemoveRole(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (h *CompanyHandler) ListActionTypes(w http.ResponseWriter, r *http.Request) {
+func (h *CompanyController) ListActionTypes(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	code := vars["code"]
 
@@ -152,7 +152,7 @@ func (h *CompanyHandler) ListActionTypes(w http.ResponseWriter, r *http.Request)
 	json.NewEncoder(w).Encode(actionTypes)
 }
 
-func (h *CompanyHandler) CreateActionType(w http.ResponseWriter, r *http.Request) {
+func (h *CompanyController) CreateActionType(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	code := vars["code"]
 
@@ -187,7 +187,7 @@ func (h *CompanyHandler) CreateActionType(w http.ResponseWriter, r *http.Request
 	w.WriteHeader(http.StatusCreated)
 }
 
-func (h *CompanyHandler) UpdateActionTypeKeyword(w http.ResponseWriter, r *http.Request) {
+func (h *CompanyController) UpdateActionTypeKeyword(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	code := vars["code"]
 	action := vars["action"]
@@ -222,7 +222,7 @@ func (h *CompanyHandler) UpdateActionTypeKeyword(w http.ResponseWriter, r *http.
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (h *CompanyHandler) DeleteActionType(w http.ResponseWriter, r *http.Request) {
+func (h *CompanyController) DeleteActionType(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	code := vars["code"]
 	action := vars["action"]

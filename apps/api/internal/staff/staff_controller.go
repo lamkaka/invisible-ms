@@ -10,15 +10,15 @@ import (
 	"github.com/lamkaka/invisible-ms/internal/shared"
 )
 
-type StaffHandler struct {
+type StaffController struct {
 	service *StaffService
 }
 
-func NewStaffHandler(service *StaffService) *StaffHandler {
-	return &StaffHandler{service: service}
+func NewStaffController(service *StaffService) *StaffController {
+	return &StaffController{service: service}
 }
 
-func (h *StaffHandler) RegisterRoutes(router *mux.Router) {
+func (h *StaffController) RegisterRoutes(router *mux.Router) {
 	router.HandleFunc("/api/staff", h.ListStaff).Methods("GET")
 	router.HandleFunc("/api/staff", h.CreateStaff).Methods("POST")
 	router.HandleFunc("/api/staff/{id}", h.GetStaff).Methods("GET")
@@ -26,7 +26,7 @@ func (h *StaffHandler) RegisterRoutes(router *mux.Router) {
 	router.HandleFunc("/api/staff/{id}/roles/{role}", h.UnassignRole).Methods("DELETE")
 }
 
-func (h *StaffHandler) ListStaff(w http.ResponseWriter, r *http.Request) {
+func (h *StaffController) ListStaff(w http.ResponseWriter, r *http.Request) {
 	companyCode := r.URL.Query().Get("company_code")
 	if companyCode == "" {
 		http.Error(w, "company_code is required", http.StatusBadRequest)
@@ -43,7 +43,7 @@ func (h *StaffHandler) ListStaff(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(staff)
 }
 
-func (h *StaffHandler) CreateStaff(w http.ResponseWriter, r *http.Request) {
+func (h *StaffController) CreateStaff(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		StaffID     string   `json:"staff_id"`
 		PhoneNumber string   `json:"phone_number"`
@@ -72,7 +72,7 @@ func (h *StaffHandler) CreateStaff(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(staff)
 }
 
-func (h *StaffHandler) GetStaff(w http.ResponseWriter, r *http.Request) {
+func (h *StaffController) GetStaff(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 
@@ -90,7 +90,7 @@ func (h *StaffHandler) GetStaff(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(staff)
 }
 
-func (h *StaffHandler) AssignRole(w http.ResponseWriter, r *http.Request) {
+func (h *StaffController) AssignRole(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 
@@ -120,7 +120,7 @@ func (h *StaffHandler) AssignRole(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
-func (h *StaffHandler) UnassignRole(w http.ResponseWriter, r *http.Request) {
+func (h *StaffController) UnassignRole(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 	role := vars["role"]

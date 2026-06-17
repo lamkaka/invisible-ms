@@ -14,35 +14,35 @@ import (
 	"github.com/lamkaka/invisible-ms/internal/shared"
 )
 
-// handlerTestMocks holds all mock repositories and the handler under test.
-type handlerTestMocks struct {
-	companyRepo *handlerMockCompanyRepo
-	atRepo      *handlerMockActionTypeRepo
-	handler     *CompanyHandler
+// controllerTestMocks holds all mock repositories and the controller under test.
+type controllerTestMocks struct {
+	companyRepo *controllerMockCompanyRepo
+	atRepo      *controllerMockActionTypeRepo
+	controller     *CompanyController
 	router      *mux.Router
 }
 
-func newHandlerTestMocks() *handlerTestMocks {
-	companyRepo := &handlerMockCompanyRepo{companies: make(map[string]*Company)}
-	atRepo := newHandlerMockActionTypeRepo()
+func newControllerTestMocks() *controllerTestMocks {
+	companyRepo := &controllerMockCompanyRepo{companies: make(map[string]*Company)}
+	atRepo := newControllerMockActionTypeRepo()
 	service := NewCompanyService(companyRepo, atRepo)
-	handler := NewCompanyHandler(service)
+	controller := NewCompanyController(service)
 	router := mux.NewRouter()
-	handler.RegisterRoutes(router)
-	return &handlerTestMocks{
+	controller.RegisterRoutes(router)
+	return &controllerTestMocks{
 		companyRepo: companyRepo,
 		atRepo:      atRepo,
-		handler:     handler,
+		controller:     controller,
 		router:      router,
 	}
 }
 
-// handlerMockCompanyRepo wraps shared.ErrNotFound for proper handler error mapping.
-type handlerMockCompanyRepo struct {
+// controllerMockCompanyRepo wraps shared.ErrNotFound for proper controller error mapping.
+type controllerMockCompanyRepo struct {
 	companies map[string]*Company
 }
 
-func (m *handlerMockCompanyRepo) Create(ctx context.Context, company *Company) error {
+func (m *controllerMockCompanyRepo) Create(ctx context.Context, company *Company) error {
 	if _, exists := m.companies[company.CompanyCode]; exists {
 		return fmt.Errorf("%w: company %s", shared.ErrAlreadyExists, company.CompanyCode)
 	}
@@ -50,7 +50,7 @@ func (m *handlerMockCompanyRepo) Create(ctx context.Context, company *Company) e
 	return nil
 }
 
-func (m *handlerMockCompanyRepo) GetByCode(ctx context.Context, code string) (*Company, error) {
+func (m *controllerMockCompanyRepo) GetByCode(ctx context.Context, code string) (*Company, error) {
 	company, exists := m.companies[code]
 	if !exists {
 		return nil, fmt.Errorf("%w: company %s", shared.ErrNotFound, code)
@@ -58,7 +58,7 @@ func (m *handlerMockCompanyRepo) GetByCode(ctx context.Context, code string) (*C
 	return company, nil
 }
 
-func (m *handlerMockCompanyRepo) List(ctx context.Context) ([]*Company, error) {
+func (m *controllerMockCompanyRepo) List(ctx context.Context) ([]*Company, error) {
 	var companies []*Company
 	for _, c := range m.companies {
 		companies = append(companies, c)
@@ -66,22 +66,22 @@ func (m *handlerMockCompanyRepo) List(ctx context.Context) ([]*Company, error) {
 	return companies, nil
 }
 
-func (m *handlerMockCompanyRepo) Update(ctx context.Context, company *Company) error {
+func (m *controllerMockCompanyRepo) Update(ctx context.Context, company *Company) error {
 	m.companies[company.CompanyCode] = company
 	return nil
 }
 
-func (m *handlerMockCompanyRepo) Delete(ctx context.Context, code string) error {
+func (m *controllerMockCompanyRepo) Delete(ctx context.Context, code string) error {
 	delete(m.companies, code)
 	return nil
 }
 
-type handlerMockActionTypeRepo struct {
+type controllerMockActionTypeRepo struct {
 	actionTypes map[string]*CompanyActionType
 }
 
-func newHandlerMockActionTypeRepo() *handlerMockActionTypeRepo {
-	return &handlerMockActionTypeRepo{
+func newControllerMockActionTypeRepo() *controllerMockActionTypeRepo {
+	return &controllerMockActionTypeRepo{
 		actionTypes: map[string]*CompanyActionType{
 			"CHECK_IN":  {ActionType: "CHECK_IN", Keyword: "IN", IsSystem: true},
 			"CHECK_OUT": {ActionType: "CHECK_OUT", Keyword: "OUT", IsSystem: true},
@@ -89,7 +89,7 @@ func newHandlerMockActionTypeRepo() *handlerMockActionTypeRepo {
 	}
 }
 
-func (m *handlerMockActionTypeRepo) List(ctx context.Context, companyCode string) ([]CompanyActionType, error) {
+func (m *controllerMockActionTypeRepo) List(ctx context.Context, companyCode string) ([]CompanyActionType, error) {
 	var result []CompanyActionType
 	for _, at := range m.actionTypes {
 		result = append(result, *at)
@@ -97,7 +97,7 @@ func (m *handlerMockActionTypeRepo) List(ctx context.Context, companyCode string
 	return result, nil
 }
 
-func (m *handlerMockActionTypeRepo) Get(ctx context.Context, companyCode, actionType string) (*CompanyActionType, error) {
+func (m *controllerMockActionTypeRepo) Get(ctx context.Context, companyCode, actionType string) (*CompanyActionType, error) {
 	at, exists := m.actionTypes[actionType]
 	if !exists {
 		return nil, fmt.Errorf("%w: %s", ErrActionTypeNotFound, actionType)
@@ -105,7 +105,7 @@ func (m *handlerMockActionTypeRepo) Get(ctx context.Context, companyCode, action
 	return &CompanyActionType{ActionType: at.ActionType, Keyword: at.Keyword, IsSystem: at.IsSystem}, nil
 }
 
-func (m *handlerMockActionTypeRepo) Create(ctx context.Context, companyCode string, at *CompanyActionType) error {
+func (m *controllerMockActionTypeRepo) Create(ctx context.Context, companyCode string, at *CompanyActionType) error {
 	if _, exists := m.actionTypes[at.ActionType]; exists {
 		return fmt.Errorf("%w: %s", ErrActionTypeAlreadyExists, at.ActionType)
 	}
@@ -122,7 +122,7 @@ func (m *handlerMockActionTypeRepo) Create(ctx context.Context, companyCode stri
 	return nil
 }
 
-func (m *handlerMockActionTypeRepo) UpdateKeyword(ctx context.Context, companyCode, actionType, newKeyword string) error {
+func (m *controllerMockActionTypeRepo) UpdateKeyword(ctx context.Context, companyCode, actionType, newKeyword string) error {
 	at, exists := m.actionTypes[actionType]
 	if !exists {
 		return fmt.Errorf("%w: %s", ErrActionTypeNotFound, actionType)
@@ -136,7 +136,7 @@ func (m *handlerMockActionTypeRepo) UpdateKeyword(ctx context.Context, companyCo
 	return nil
 }
 
-func (m *handlerMockActionTypeRepo) Delete(ctx context.Context, companyCode, actionType string) error {
+func (m *controllerMockActionTypeRepo) Delete(ctx context.Context, companyCode, actionType string) error {
 	if _, exists := m.actionTypes[actionType]; !exists {
 		return fmt.Errorf("%w: %s", ErrActionTypeNotFound, actionType)
 	}
@@ -144,13 +144,13 @@ func (m *handlerMockActionTypeRepo) Delete(ctx context.Context, companyCode, act
 	return nil
 }
 
-func (m *handlerMockActionTypeRepo) SeedDefaults(ctx context.Context, companyCode string) error {
+func (m *controllerMockActionTypeRepo) SeedDefaults(ctx context.Context, companyCode string) error {
 	m.actionTypes["CHECK_IN"] = &CompanyActionType{ActionType: "CHECK_IN", Keyword: "IN", IsSystem: true}
 	m.actionTypes["CHECK_OUT"] = &CompanyActionType{ActionType: "CHECK_OUT", Keyword: "OUT", IsSystem: true}
 	return nil
 }
 
-func (m *handlerMockActionTypeRepo) KeywordExists(ctx context.Context, companyCode, keyword string) (bool, error) {
+func (m *controllerMockActionTypeRepo) KeywordExists(ctx context.Context, companyCode, keyword string) (bool, error) {
 	for _, at := range m.actionTypes {
 		if at.Keyword == keyword {
 			return true, nil
@@ -163,11 +163,11 @@ func (m *handlerMockActionTypeRepo) KeywordExists(ctx context.Context, companyCo
 // Tests
 // ---------------------------------------------------------------------------
 
-func TestCompanyHandler_ListCompanies(t *testing.T) {
-	m := newHandlerTestMocks()
+func TestCompanyController_ListCompanies(t *testing.T) {
+	m := newControllerTestMocks()
 
 	// Pre-seed a company
-	_, err := m.handler.service.CreateCompany(context.Background(), "ACME", "Acme Corp")
+	_, err := m.controller.service.CreateCompany(context.Background(), "ACME", "Acme Corp")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -189,8 +189,8 @@ func TestCompanyHandler_ListCompanies(t *testing.T) {
 	}
 }
 
-func TestCompanyHandler_CreateCompany_Success(t *testing.T) {
-	m := newHandlerTestMocks()
+func TestCompanyController_CreateCompany_Success(t *testing.T) {
+	m := newControllerTestMocks()
 
 	body := `{"company_code":"ACME","company_name":"Acme Corp"}`
 	req := httptest.NewRequest("POST", "/api/companies", bytes.NewBufferString(body))
@@ -211,8 +211,8 @@ func TestCompanyHandler_CreateCompany_Success(t *testing.T) {
 	}
 }
 
-func TestCompanyHandler_CreateCompany_Duplicate(t *testing.T) {
-	m := newHandlerTestMocks()
+func TestCompanyController_CreateCompany_Duplicate(t *testing.T) {
+	m := newControllerTestMocks()
 
 	// Create once
 	body := `{"company_code":"ACME","company_name":"Acme Corp"}`
@@ -234,8 +234,8 @@ func TestCompanyHandler_CreateCompany_Duplicate(t *testing.T) {
 	}
 }
 
-func TestCompanyHandler_CreateCompany_InvalidJSON(t *testing.T) {
-	m := newHandlerTestMocks()
+func TestCompanyController_CreateCompany_InvalidJSON(t *testing.T) {
+	m := newControllerTestMocks()
 
 	req := httptest.NewRequest("POST", "/api/companies", bytes.NewBufferString("not-json"))
 	req.Header.Set("Content-Type", "application/json")
@@ -247,8 +247,8 @@ func TestCompanyHandler_CreateCompany_InvalidJSON(t *testing.T) {
 	}
 }
 
-func TestCompanyHandler_CreateCompany_MissingFields(t *testing.T) {
-	m := newHandlerTestMocks()
+func TestCompanyController_CreateCompany_MissingFields(t *testing.T) {
+	m := newControllerTestMocks()
 
 	// Empty company code should cause domain validation to fail → 400
 	body := `{"company_code":"","company_name":"Acme Corp"}`
@@ -262,11 +262,11 @@ func TestCompanyHandler_CreateCompany_MissingFields(t *testing.T) {
 	}
 }
 
-func TestCompanyHandler_GetCompany_Found(t *testing.T) {
-	m := newHandlerTestMocks()
+func TestCompanyController_GetCompany_Found(t *testing.T) {
+	m := newControllerTestMocks()
 
 	// Seed company
-	_, err := m.handler.service.CreateCompany(context.Background(), "ACME", "Acme Corp")
+	_, err := m.controller.service.CreateCompany(context.Background(), "ACME", "Acme Corp")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -288,8 +288,8 @@ func TestCompanyHandler_GetCompany_Found(t *testing.T) {
 	}
 }
 
-func TestCompanyHandler_GetCompany_NotFound(t *testing.T) {
-	m := newHandlerTestMocks()
+func TestCompanyController_GetCompany_NotFound(t *testing.T) {
+	m := newControllerTestMocks()
 
 	req := httptest.NewRequest("GET", "/api/companies/NONEXISTENT", nil)
 	rec := httptest.NewRecorder()
@@ -300,11 +300,11 @@ func TestCompanyHandler_GetCompany_NotFound(t *testing.T) {
 	}
 }
 
-func TestCompanyHandler_AddRole_Success(t *testing.T) {
-	m := newHandlerTestMocks()
+func TestCompanyController_AddRole_Success(t *testing.T) {
+	m := newControllerTestMocks()
 
 	// Seed company
-	_, err := m.handler.service.CreateCompany(context.Background(), "ACME", "Acme Corp")
+	_, err := m.controller.service.CreateCompany(context.Background(), "ACME", "Acme Corp")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -320,8 +320,8 @@ func TestCompanyHandler_AddRole_Success(t *testing.T) {
 	}
 }
 
-func TestCompanyHandler_AddRole_CompanyNotFound(t *testing.T) {
-	m := newHandlerTestMocks()
+func TestCompanyController_AddRole_CompanyNotFound(t *testing.T) {
+	m := newControllerTestMocks()
 
 	body := `{"role_name":"CLEANING","hourly_rate":15.50}`
 	req := httptest.NewRequest("POST", "/api/companies/NONEXISTENT/roles", bytes.NewBufferString(body))
@@ -334,16 +334,16 @@ func TestCompanyHandler_AddRole_CompanyNotFound(t *testing.T) {
 	}
 }
 
-func TestCompanyHandler_AddRole_Duplicate(t *testing.T) {
-	m := newHandlerTestMocks()
+func TestCompanyController_AddRole_Duplicate(t *testing.T) {
+	m := newControllerTestMocks()
 
-	_, err := m.handler.service.CreateCompany(context.Background(), "ACME", "Acme Corp")
+	_, err := m.controller.service.CreateCompany(context.Background(), "ACME", "Acme Corp")
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Add role once
-	err = m.handler.service.AddRole(context.Background(), "ACME", "CLEANING", 15.50)
+	err = m.controller.service.AddRole(context.Background(), "ACME", "CLEANING", 15.50)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -360,10 +360,10 @@ func TestCompanyHandler_AddRole_Duplicate(t *testing.T) {
 	}
 }
 
-func TestCompanyHandler_AddRole_InvalidJSON(t *testing.T) {
-	m := newHandlerTestMocks()
+func TestCompanyController_AddRole_InvalidJSON(t *testing.T) {
+	m := newControllerTestMocks()
 
-	_, err := m.handler.service.CreateCompany(context.Background(), "ACME", "Acme Corp")
+	_, err := m.controller.service.CreateCompany(context.Background(), "ACME", "Acme Corp")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -378,14 +378,14 @@ func TestCompanyHandler_AddRole_InvalidJSON(t *testing.T) {
 	}
 }
 
-func TestCompanyHandler_RemoveRole_Success(t *testing.T) {
-	m := newHandlerTestMocks()
+func TestCompanyController_RemoveRole_Success(t *testing.T) {
+	m := newControllerTestMocks()
 
-	_, err := m.handler.service.CreateCompany(context.Background(), "ACME", "Acme Corp")
+	_, err := m.controller.service.CreateCompany(context.Background(), "ACME", "Acme Corp")
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = m.handler.service.AddRole(context.Background(), "ACME", "CLEANING", 15.50)
+	err = m.controller.service.AddRole(context.Background(), "ACME", "CLEANING", 15.50)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -399,10 +399,10 @@ func TestCompanyHandler_RemoveRole_Success(t *testing.T) {
 	}
 }
 
-func TestCompanyHandler_RemoveRole_NotFound(t *testing.T) {
-	m := newHandlerTestMocks()
+func TestCompanyController_RemoveRole_NotFound(t *testing.T) {
+	m := newControllerTestMocks()
 
-	_, err := m.handler.service.CreateCompany(context.Background(), "ACME", "Acme Corp")
+	_, err := m.controller.service.CreateCompany(context.Background(), "ACME", "Acme Corp")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -417,8 +417,8 @@ func TestCompanyHandler_RemoveRole_NotFound(t *testing.T) {
 	}
 }
 
-func TestCompanyHandler_RemoveRole_CompanyNotFound(t *testing.T) {
-	m := newHandlerTestMocks()
+func TestCompanyController_RemoveRole_CompanyNotFound(t *testing.T) {
+	m := newControllerTestMocks()
 
 	req := httptest.NewRequest("DELETE", "/api/companies/NONEXISTENT/roles/CLEANING", nil)
 	rec := httptest.NewRecorder()

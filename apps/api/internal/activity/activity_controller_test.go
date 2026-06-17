@@ -21,20 +21,20 @@ const testWebhookSecret = "test-secret-123"
 
 // --- Mocks that wrap shared errors for proper HTTP code mapping ---
 
-type handlerMockActivityRepo struct {
+type controllerMockActivityRepo struct {
 	logs []*ActivityLog
 }
 
-func newHandlerMockActivityRepo() *handlerMockActivityRepo {
-	return &handlerMockActivityRepo{logs: []*ActivityLog{}}
+func newControllerMockActivityRepo() *controllerMockActivityRepo {
+	return &controllerMockActivityRepo{logs: []*ActivityLog{}}
 }
 
-func (m *handlerMockActivityRepo) Create(ctx context.Context, log *ActivityLog) error {
+func (m *controllerMockActivityRepo) Create(ctx context.Context, log *ActivityLog) error {
 	m.logs = append(m.logs, log)
 	return nil
 }
 
-func (m *handlerMockActivityRepo) CheckOutWithValidation(ctx context.Context, log *ActivityLog) error {
+func (m *controllerMockActivityRepo) CheckOutWithValidation(ctx context.Context, log *ActivityLog) error {
 	var latestCheckIn *ActivityLog
 	var latestCheckOut *ActivityLog
 	for _, l := range m.logs {
@@ -61,7 +61,7 @@ func (m *handlerMockActivityRepo) CheckOutWithValidation(ctx context.Context, lo
 	return nil
 }
 
-func (m *handlerMockActivityRepo) GetByWorker(ctx context.Context, staffID string, from, to time.Time) ([]*ActivityLog, error) {
+func (m *controllerMockActivityRepo) GetByWorker(ctx context.Context, staffID string, from, to time.Time) ([]*ActivityLog, error) {
 	var result []*ActivityLog
 	for _, l := range m.logs {
 		if l.StaffID == staffID && !l.Timestamp.Before(from) && !l.Timestamp.After(to) {
@@ -71,7 +71,7 @@ func (m *handlerMockActivityRepo) GetByWorker(ctx context.Context, staffID strin
 	return result, nil
 }
 
-func (m *handlerMockActivityRepo) GetByCompany(ctx context.Context, companyCode string, from, to time.Time) ([]*ActivityLog, error) {
+func (m *controllerMockActivityRepo) GetByCompany(ctx context.Context, companyCode string, from, to time.Time) ([]*ActivityLog, error) {
 	var result []*ActivityLog
 	for _, l := range m.logs {
 		if l.CompanyCode == companyCode && !l.Timestamp.Before(from) && !l.Timestamp.After(to) {
@@ -81,7 +81,7 @@ func (m *handlerMockActivityRepo) GetByCompany(ctx context.Context, companyCode 
 	return result, nil
 }
 
-func (m *handlerMockActivityRepo) GetLatestByWorkerAndRole(ctx context.Context, workerID, role string, actionType string) (*ActivityLog, error) {
+func (m *controllerMockActivityRepo) GetLatestByWorkerAndRole(ctx context.Context, workerID, role string, actionType string) (*ActivityLog, error) {
 	var latest *ActivityLog
 	for _, l := range m.logs {
 		if l.StaffID == workerID && l.Role == role && l.ActionType == actionType {
@@ -96,15 +96,15 @@ func (m *handlerMockActivityRepo) GetLatestByWorkerAndRole(ctx context.Context, 
 	return latest, nil
 }
 
-type handlerMockWorkerService struct {
+type controllerMockWorkerService struct {
 	staff map[string]*staff.Staff
 }
 
-func newHandlerMockWorkerService() *handlerMockWorkerService {
-	return &handlerMockWorkerService{staff: make(map[string]*staff.Staff)}
+func newControllerMockWorkerService() *controllerMockWorkerService {
+	return &controllerMockWorkerService{staff: make(map[string]*staff.Staff)}
 }
 
-func (m *handlerMockWorkerService) GetStaffByPhone(ctx context.Context, phone, companyCode string) (*staff.Staff, error) {
+func (m *controllerMockWorkerService) GetStaffByPhone(ctx context.Context, phone, companyCode string) (*staff.Staff, error) {
 	for _, s := range m.staff {
 		if s.PhoneNumber == phone && s.CompanyCode == companyCode {
 			return s, nil
@@ -113,19 +113,19 @@ func (m *handlerMockWorkerService) GetStaffByPhone(ctx context.Context, phone, c
 	return nil, fmt.Errorf("%w: staff with phone %s", shared.ErrNotFound, phone)
 }
 
-type handlerMockCompanyRepo struct {
+type controllerMockCompanyRepo struct {
 	companies map[string]*company.Company
 }
 
-func newHandlerMockCompanyRepo() *handlerMockCompanyRepo {
-	return &handlerMockCompanyRepo{companies: make(map[string]*company.Company)}
+func newControllerMockCompanyRepo() *controllerMockCompanyRepo {
+	return &controllerMockCompanyRepo{companies: make(map[string]*company.Company)}
 }
 
-func (m *handlerMockCompanyRepo) Create(ctx context.Context, c *company.Company) error {
+func (m *controllerMockCompanyRepo) Create(ctx context.Context, c *company.Company) error {
 	m.companies[c.CompanyCode] = c
 	return nil
 }
-func (m *handlerMockCompanyRepo) GetByCode(ctx context.Context, code string) (*company.Company, error) {
+func (m *controllerMockCompanyRepo) GetByCode(ctx context.Context, code string) (*company.Company, error) {
 	c, exists := m.companies[code]
 	if !exists {
 		c, _ = company.NewCompany(code, code+" Corp")
@@ -133,22 +133,22 @@ func (m *handlerMockCompanyRepo) GetByCode(ctx context.Context, code string) (*c
 	}
 	return c, nil
 }
-func (m *handlerMockCompanyRepo) List(ctx context.Context) ([]*company.Company, error) { return nil, nil }
-func (m *handlerMockCompanyRepo) Update(ctx context.Context, c *company.Company) error {
+func (m *controllerMockCompanyRepo) List(ctx context.Context) ([]*company.Company, error) { return nil, nil }
+func (m *controllerMockCompanyRepo) Update(ctx context.Context, c *company.Company) error {
 	m.companies[c.CompanyCode] = c
 	return nil
 }
-func (m *handlerMockCompanyRepo) Delete(ctx context.Context, code string) error {
+func (m *controllerMockCompanyRepo) Delete(ctx context.Context, code string) error {
 	delete(m.companies, code)
 	return nil
 }
 
-type handlerMockActionTypeRepo struct {
+type controllerMockActionTypeRepo struct {
 	actionTypes []company.CompanyActionType
 }
 
-func newHandlerMockActionTypeRepo() *handlerMockActionTypeRepo {
-	return &handlerMockActionTypeRepo{
+func newControllerMockActionTypeRepo() *controllerMockActionTypeRepo {
+	return &controllerMockActionTypeRepo{
 		actionTypes: []company.CompanyActionType{
 			{ActionType: "CHECK_IN", Keyword: "IN", IsSystem: true},
 			{ActionType: "CHECK_OUT", Keyword: "OUT", IsSystem: true},
@@ -156,11 +156,11 @@ func newHandlerMockActionTypeRepo() *handlerMockActionTypeRepo {
 	}
 }
 
-func (m *handlerMockActionTypeRepo) List(ctx context.Context, companyCode string) ([]company.CompanyActionType, error) {
+func (m *controllerMockActionTypeRepo) List(ctx context.Context, companyCode string) ([]company.CompanyActionType, error) {
 	return m.actionTypes, nil
 }
 
-func (m *handlerMockActionTypeRepo) Get(ctx context.Context, companyCode, actionType string) (*company.CompanyActionType, error) {
+func (m *controllerMockActionTypeRepo) Get(ctx context.Context, companyCode, actionType string) (*company.CompanyActionType, error) {
 	for _, at := range m.actionTypes {
 		if at.ActionType == actionType {
 			return &at, nil
@@ -169,23 +169,23 @@ func (m *handlerMockActionTypeRepo) Get(ctx context.Context, companyCode, action
 	return nil, nil
 }
 
-func (m *handlerMockActionTypeRepo) Create(ctx context.Context, companyCode string, at *company.CompanyActionType) error {
+func (m *controllerMockActionTypeRepo) Create(ctx context.Context, companyCode string, at *company.CompanyActionType) error {
 	return nil
 }
 
-func (m *handlerMockActionTypeRepo) UpdateKeyword(ctx context.Context, companyCode, actionType, newKeyword string) error {
+func (m *controllerMockActionTypeRepo) UpdateKeyword(ctx context.Context, companyCode, actionType, newKeyword string) error {
 	return nil
 }
 
-func (m *handlerMockActionTypeRepo) Delete(ctx context.Context, companyCode, actionType string) error {
+func (m *controllerMockActionTypeRepo) Delete(ctx context.Context, companyCode, actionType string) error {
 	return nil
 }
 
-func (m *handlerMockActionTypeRepo) SeedDefaults(ctx context.Context, companyCode string) error {
+func (m *controllerMockActionTypeRepo) SeedDefaults(ctx context.Context, companyCode string) error {
 	return nil
 }
 
-func (m *handlerMockActionTypeRepo) KeywordExists(ctx context.Context, companyCode, keyword string) (bool, error) {
+func (m *controllerMockActionTypeRepo) KeywordExists(ctx context.Context, companyCode, keyword string) (bool, error) {
 	for _, at := range m.actionTypes {
 		if at.Keyword == keyword {
 			return true, nil
@@ -196,42 +196,42 @@ func (m *handlerMockActionTypeRepo) KeywordExists(ctx context.Context, companyCo
 
 // --- Test setup ---
 
-type activityHandlerTestMocks struct {
-	activityRepo *handlerMockActivityRepo
-	workerSvc    *handlerMockWorkerService
+type activityControllerTestMocks struct {
+	activityRepo *controllerMockActivityRepo
+	workerSvc    *controllerMockWorkerService
 	companySvc   *company.CompanyService
-	handler      *ActivityHandler
+	controller      *ActivityController
 	router       *mux.Router
 }
 
-func newActivityHandlerTestMocks() *activityHandlerTestMocks {
-	activityRepo := newHandlerMockActivityRepo()
-	workerSvc := newHandlerMockWorkerService()
+func newActivityControllerTestMocks() *activityControllerTestMocks {
+	activityRepo := newControllerMockActivityRepo()
+	workerSvc := newControllerMockWorkerService()
 
-	mockATRepo := newHandlerMockActionTypeRepo()
-	mockCompRepo := newHandlerMockCompanyRepo()
+	mockATRepo := newControllerMockActionTypeRepo()
+	mockCompRepo := newControllerMockCompanyRepo()
 	companySvc := company.NewCompanyService(mockCompRepo, mockATRepo)
 
 	webhookSvc := NewWebhookService(activityRepo, workerSvc, companySvc)
 	sessionSvc := NewSessionService(activityRepo, companySvc)
 
-	handler := NewActivityHandler(webhookSvc, sessionSvc, testWebhookSecret)
+	controller := NewActivityController(webhookSvc, sessionSvc, testWebhookSecret)
 	router := mux.NewRouter()
-	handler.RegisterRoutes(router)
+	controller.RegisterRoutes(router)
 
-	return &activityHandlerTestMocks{
+	return &activityControllerTestMocks{
 		activityRepo: activityRepo,
 		workerSvc:    workerSvc,
 		companySvc:   companySvc,
-		handler:      handler,
+		controller:      controller,
 		router:       router,
 	}
 }
 
 // --- Webhook Tests ---
 
-func TestActivityHandler_Webhook_CheckIn_Success(t *testing.T) {
-	m := newActivityHandlerTestMocks()
+func TestActivityController_Webhook_CheckIn_Success(t *testing.T) {
+	m := newActivityControllerTestMocks()
 
 	// Seed an active worker with single role
 	s, _ := staff.NewStaff("staff-1", "+1234567890", "John Doe", "ACME")
@@ -261,8 +261,8 @@ func TestActivityHandler_Webhook_CheckIn_Success(t *testing.T) {
 	}
 }
 
-func TestActivityHandler_Webhook_MissingSecret(t *testing.T) {
-	m := newActivityHandlerTestMocks()
+func TestActivityController_Webhook_MissingSecret(t *testing.T) {
+	m := newActivityControllerTestMocks()
 
 	payload := `{"phone":"+1234567890","message":"IN","company_code":"ACME"}`
 	req := httptest.NewRequest("POST", "/webhook/message", bytes.NewBufferString(payload))
@@ -276,8 +276,8 @@ func TestActivityHandler_Webhook_MissingSecret(t *testing.T) {
 	}
 }
 
-func TestActivityHandler_Webhook_InvalidSecret(t *testing.T) {
-	m := newActivityHandlerTestMocks()
+func TestActivityController_Webhook_InvalidSecret(t *testing.T) {
+	m := newActivityControllerTestMocks()
 
 	payload := `{"phone":"+1234567890","message":"IN","company_code":"ACME"}`
 	req := httptest.NewRequest("POST", "/webhook/message", bytes.NewBufferString(payload))
@@ -291,8 +291,8 @@ func TestActivityHandler_Webhook_InvalidSecret(t *testing.T) {
 	}
 }
 
-func TestActivityHandler_Webhook_InvalidJSON(t *testing.T) {
-	m := newActivityHandlerTestMocks()
+func TestActivityController_Webhook_InvalidJSON(t *testing.T) {
+	m := newActivityControllerTestMocks()
 
 	req := httptest.NewRequest("POST", "/webhook/message", bytes.NewBufferString("not-json"))
 	req.Header.Set("Content-Type", "application/json")
@@ -305,8 +305,8 @@ func TestActivityHandler_Webhook_InvalidJSON(t *testing.T) {
 	}
 }
 
-func TestActivityHandler_Webhook_StaffNotFound(t *testing.T) {
-	m := newActivityHandlerTestMocks()
+func TestActivityController_Webhook_StaffNotFound(t *testing.T) {
+	m := newActivityControllerTestMocks()
 
 	payload := `{"phone":"+9999999999","message":"IN","company_code":"ACME"}`
 	req := httptest.NewRequest("POST", "/webhook/message", bytes.NewBufferString(payload))
@@ -320,8 +320,8 @@ func TestActivityHandler_Webhook_StaffNotFound(t *testing.T) {
 	}
 }
 
-func TestActivityHandler_Webhook_InvalidMessage(t *testing.T) {
-	m := newActivityHandlerTestMocks()
+func TestActivityController_Webhook_InvalidMessage(t *testing.T) {
+	m := newActivityControllerTestMocks()
 
 	s, _ := staff.NewStaff("staff-1", "+1234567890", "John Doe", "ACME")
 	s.AssignRole("CLEANING")
@@ -340,8 +340,8 @@ func TestActivityHandler_Webhook_InvalidMessage(t *testing.T) {
 	}
 }
 
-func TestActivityHandler_Webhook_UnknownAction(t *testing.T) {
-	m := newActivityHandlerTestMocks()
+func TestActivityController_Webhook_UnknownAction(t *testing.T) {
+	m := newActivityControllerTestMocks()
 
 	s, _ := staff.NewStaff("staff-1", "+1234567890", "John Doe", "ACME")
 	s.AssignRole("CLEANING")
@@ -359,8 +359,8 @@ func TestActivityHandler_Webhook_UnknownAction(t *testing.T) {
 	}
 }
 
-func TestActivityHandler_Webhook_AlreadyCheckedIn(t *testing.T) {
-	m := newActivityHandlerTestMocks()
+func TestActivityController_Webhook_AlreadyCheckedIn(t *testing.T) {
+	m := newActivityControllerTestMocks()
 
 	s, _ := staff.NewStaff("staff-1", "+1234567890", "John Doe", "ACME")
 	s.AssignRole("CLEANING")
@@ -397,8 +397,8 @@ func TestActivityHandler_Webhook_AlreadyCheckedIn(t *testing.T) {
 	}
 }
 
-func TestActivityHandler_Webhook_CheckOut_Success(t *testing.T) {
-	m := newActivityHandlerTestMocks()
+func TestActivityController_Webhook_CheckOut_Success(t *testing.T) {
+	m := newActivityControllerTestMocks()
 
 	s, _ := staff.NewStaff("staff-1", "+1234567890", "John Doe", "ACME")
 	s.AssignRole("CLEANING")
@@ -410,7 +410,7 @@ func TestActivityHandler_Webhook_CheckOut_Success(t *testing.T) {
 		Message:     "IN",
 		CompanyCode: "ACME",
 	}
-	_, err := m.handler.webhookService.ProcessWebhook(context.Background(), inPayload)
+	_, err := m.controller.webhookService.ProcessWebhook(context.Background(), inPayload)
 	if err != nil {
 		t.Fatalf("check-in failed: %v", err)
 	}
@@ -436,8 +436,8 @@ func TestActivityHandler_Webhook_CheckOut_Success(t *testing.T) {
 	}
 }
 
-func TestActivityHandler_Webhook_CheckOutWithoutCheckIn(t *testing.T) {
-	m := newActivityHandlerTestMocks()
+func TestActivityController_Webhook_CheckOutWithoutCheckIn(t *testing.T) {
+	m := newActivityControllerTestMocks()
 
 	s, _ := staff.NewStaff("staff-1", "+1234567890", "John Doe", "ACME")
 	s.AssignRole("CLEANING")
@@ -458,8 +458,8 @@ func TestActivityHandler_Webhook_CheckOutWithoutCheckIn(t *testing.T) {
 
 // --- ListActivities Tests ---
 
-func TestActivityHandler_ListActivities_ByStaff(t *testing.T) {
-	m := newActivityHandlerTestMocks()
+func TestActivityController_ListActivities_ByStaff(t *testing.T) {
+	m := newActivityControllerTestMocks()
 
 	// Seed activity logs directly
 	now := time.Now()
@@ -483,8 +483,8 @@ func TestActivityHandler_ListActivities_ByStaff(t *testing.T) {
 	}
 }
 
-func TestActivityHandler_ListActivities_ByCompany(t *testing.T) {
-	m := newActivityHandlerTestMocks()
+func TestActivityController_ListActivities_ByCompany(t *testing.T) {
+	m := newActivityControllerTestMocks()
 
 	now := time.Now()
 	log, _ := NewActivityLog("log-1", "staff-1", "ACME", "CLEANING", ActionCheckIn, now)
@@ -507,8 +507,8 @@ func TestActivityHandler_ListActivities_ByCompany(t *testing.T) {
 	}
 }
 
-func TestActivityHandler_ListActivities_NoFilters(t *testing.T) {
-	m := newActivityHandlerTestMocks()
+func TestActivityController_ListActivities_NoFilters(t *testing.T) {
+	m := newActivityControllerTestMocks()
 
 	req := httptest.NewRequest("GET", "/api/activities", nil)
 	rec := httptest.NewRecorder()
@@ -519,8 +519,8 @@ func TestActivityHandler_ListActivities_NoFilters(t *testing.T) {
 	}
 }
 
-func TestActivityHandler_ListActivities_MalformedTime(t *testing.T) {
-	m := newActivityHandlerTestMocks()
+func TestActivityController_ListActivities_MalformedTime(t *testing.T) {
+	m := newActivityControllerTestMocks()
 
 	req := httptest.NewRequest("GET", "/api/activities?staff_id=staff-1&from=not-a-time", nil)
 	rec := httptest.NewRecorder()
@@ -531,8 +531,8 @@ func TestActivityHandler_ListActivities_MalformedTime(t *testing.T) {
 	}
 }
 
-func TestActivityHandler_ListActivities_WithTimeRange(t *testing.T) {
-	m := newActivityHandlerTestMocks()
+func TestActivityController_ListActivities_WithTimeRange(t *testing.T) {
+	m := newActivityControllerTestMocks()
 
 	now := time.Now()
 	log, _ := NewActivityLog("log-1", "staff-1", "ACME", "CLEANING", ActionCheckIn, now)
@@ -553,8 +553,8 @@ func TestActivityHandler_ListActivities_WithTimeRange(t *testing.T) {
 
 // --- ListSessions Tests ---
 
-func TestActivityHandler_ListSessions_Success(t *testing.T) {
-	m := newActivityHandlerTestMocks()
+func TestActivityController_ListSessions_Success(t *testing.T) {
+	m := newActivityControllerTestMocks()
 
 	// Seed a company with the CLEANING role so SessionService can look up hourly rates
 	_, err := m.companySvc.CreateCompany(context.Background(), "ACME", "Acme Corp")
@@ -589,8 +589,8 @@ func TestActivityHandler_ListSessions_Success(t *testing.T) {
 	}
 }
 
-func TestActivityHandler_ListSessions_MalformedTime(t *testing.T) {
-	m := newActivityHandlerTestMocks()
+func TestActivityController_ListSessions_MalformedTime(t *testing.T) {
+	m := newActivityControllerTestMocks()
 
 	req := httptest.NewRequest("GET", "/api/activities/sessions?company_code=ACME&from=bad-time", nil)
 	rec := httptest.NewRecorder()

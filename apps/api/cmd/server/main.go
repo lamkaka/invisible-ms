@@ -49,15 +49,15 @@ func main() {
 	activitySessionService := activity.NewSessionService(activityRepo, companyService)
 	dashboardService := dashboard.NewDashboardService(dashboardRepo)
 
-	// Initialize handlers
-	companyHandler := company.NewCompanyHandler(companyService)
-	staffHandler := staff.NewStaffHandler(staffService)
-	activityHandler := activity.NewActivityHandler(activityWebhookService, activitySessionService, cfg.WebhookSecret)
-	dashboardAPIHandler := dashboard.NewDashboardAPIHandler(dashboardService)
+	// Initialize controllers
+	companyController := company.NewCompanyController(companyService)
+	staffController := staff.NewStaffController(staffService)
+	activityController := activity.NewActivityController(activityWebhookService, activitySessionService, cfg.WebhookSecret)
+	dashboardAPIController := dashboard.NewDashboardAPIController(dashboardService)
 
-	dashboardWebHandler, err := dashboard.NewDashboardWebHandler(dashboardService, "./templates")
+	dashboardWebController, err := dashboard.NewDashboardWebController(dashboardService, cfg.TemplatesPath)
 	if err != nil {
-		log.Fatalf("Failed to create dashboard web handler: %v", err)
+		log.Fatalf("Failed to create dashboard web controller: %v", err)
 	}
 
 	// Setup router
@@ -66,14 +66,14 @@ func main() {
 	router.Use(shared.CORSMiddleware(cfg.CORSAllowedOrigins))
 
 	// Register routes
-	companyHandler.RegisterRoutes(router)
-	staffHandler.RegisterRoutes(router)
-	activityHandler.RegisterRoutes(router)
-	dashboardAPIHandler.RegisterRoutes(router)
-	dashboardWebHandler.RegisterRoutes(router)
+	companyController.RegisterRoutes(router)
+	staffController.RegisterRoutes(router)
+	activityController.RegisterRoutes(router)
+	dashboardAPIController.RegisterRoutes(router)
+	dashboardWebController.RegisterRoutes(router)
 
 	// Serve static files
-	router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./web/static"))))
+	router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir(cfg.StaticPath))))
 
 	// Create server
 	server := &http.Server{

@@ -9,7 +9,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-type DashboardWebHandler struct {
+type DashboardWebController struct {
 	service       *DashboardService
 	templateDir   string
 	dashboardTmpl *template.Template
@@ -17,7 +17,7 @@ type DashboardWebHandler struct {
 	actionsTmpl   *template.Template
 }
 
-func NewDashboardWebHandler(service *DashboardService, templateDir string) (*DashboardWebHandler, error) {
+func NewDashboardWebController(service *DashboardService, templateDir string) (*DashboardWebController, error) {
 	dashboardTmpl, err := template.ParseFiles(
 		filepath.Join(templateDir, "layout.html"),
 		filepath.Join(templateDir, "dashboard.html"),
@@ -42,7 +42,7 @@ func NewDashboardWebHandler(service *DashboardService, templateDir string) (*Das
 		return nil, fmt.Errorf("failed to parse actions templates: %w", err)
 	}
 
-	return &DashboardWebHandler{
+	return &DashboardWebController{
 		service:       service,
 		templateDir:   templateDir,
 		dashboardTmpl: dashboardTmpl,
@@ -51,13 +51,13 @@ func NewDashboardWebHandler(service *DashboardService, templateDir string) (*Das
 	}, nil
 }
 
-func (h *DashboardWebHandler) RegisterRoutes(router *mux.Router) {
+func (h *DashboardWebController) RegisterRoutes(router *mux.Router) {
 	router.HandleFunc("/dashboard", h.DashboardPage).Methods("GET")
 	router.HandleFunc("/staff", h.StaffPage).Methods("GET")
 	router.HandleFunc("/actions", h.ActionsPage).Methods("GET")
 }
 
-func (h *DashboardWebHandler) DashboardPage(w http.ResponseWriter, r *http.Request) {
+func (h *DashboardWebController) DashboardPage(w http.ResponseWriter, r *http.Request) {
 	companyCode := r.URL.Query().Get("company_code")
 
 	stats, err := h.service.GetStats(r.Context(), companyCode)
@@ -78,14 +78,14 @@ func (h *DashboardWebHandler) DashboardPage(w http.ResponseWriter, r *http.Reque
 	}
 }
 
-func (h *DashboardWebHandler) StaffPage(w http.ResponseWriter, r *http.Request) {
+func (h *DashboardWebController) StaffPage(w http.ResponseWriter, r *http.Request) {
 	if err := h.staffTmpl.ExecuteTemplate(w, "staff.html", nil); err != nil {
 		http.Error(w, "Template error: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 }
 
-func (h *DashboardWebHandler) ActionsPage(w http.ResponseWriter, r *http.Request) {
+func (h *DashboardWebController) ActionsPage(w http.ResponseWriter, r *http.Request) {
 	if err := h.actionsTmpl.ExecuteTemplate(w, "actions.html", nil); err != nil {
 		http.Error(w, "Template error: "+err.Error(), http.StatusInternalServerError)
 		return

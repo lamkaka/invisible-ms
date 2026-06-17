@@ -15,17 +15,17 @@ import (
 	"github.com/lamkaka/invisible-ms/internal/shared"
 )
 
-// --- Mocks that wrap shared errors for proper handler HTTP code mapping ---
+// --- Mocks that wrap shared errors for proper controller HTTP code mapping ---
 
-type handlerMockStaffRepo struct {
+type controllerMockStaffRepo struct {
 	staff map[string]*Staff
 }
 
-func newHandlerMockStaffRepo() *handlerMockStaffRepo {
-	return &handlerMockStaffRepo{staff: make(map[string]*Staff)}
+func newControllerMockStaffRepo() *controllerMockStaffRepo {
+	return &controllerMockStaffRepo{staff: make(map[string]*Staff)}
 }
 
-func (m *handlerMockStaffRepo) Create(ctx context.Context, s *Staff) error {
+func (m *controllerMockStaffRepo) Create(ctx context.Context, s *Staff) error {
 	if _, exists := m.staff[s.StaffID]; exists {
 		return fmt.Errorf("%w: staff %s", shared.ErrAlreadyExists, s.StaffID)
 	}
@@ -33,7 +33,7 @@ func (m *handlerMockStaffRepo) Create(ctx context.Context, s *Staff) error {
 	return nil
 }
 
-func (m *handlerMockStaffRepo) GetByID(ctx context.Context, id string) (*Staff, error) {
+func (m *controllerMockStaffRepo) GetByID(ctx context.Context, id string) (*Staff, error) {
 	s, exists := m.staff[id]
 	if !exists {
 		return nil, fmt.Errorf("%w: staff %s", shared.ErrNotFound, id)
@@ -41,7 +41,7 @@ func (m *handlerMockStaffRepo) GetByID(ctx context.Context, id string) (*Staff, 
 	return s, nil
 }
 
-func (m *handlerMockStaffRepo) GetByPhoneAndCompany(ctx context.Context, phone, companyCode string) (*Staff, error) {
+func (m *controllerMockStaffRepo) GetByPhoneAndCompany(ctx context.Context, phone, companyCode string) (*Staff, error) {
 	for _, s := range m.staff {
 		if s.PhoneNumber == phone && s.CompanyCode == companyCode {
 			return s, nil
@@ -50,7 +50,7 @@ func (m *handlerMockStaffRepo) GetByPhoneAndCompany(ctx context.Context, phone, 
 	return nil, fmt.Errorf("%w: staff with phone %s", shared.ErrNotFound, phone)
 }
 
-func (m *handlerMockStaffRepo) List(ctx context.Context, companyCode string) ([]*Staff, error) {
+func (m *controllerMockStaffRepo) List(ctx context.Context, companyCode string) ([]*Staff, error) {
 	var result []*Staff
 	for _, s := range m.staff {
 		if companyCode == "" || s.CompanyCode == companyCode {
@@ -60,30 +60,30 @@ func (m *handlerMockStaffRepo) List(ctx context.Context, companyCode string) ([]
 	return result, nil
 }
 
-func (m *handlerMockStaffRepo) Update(ctx context.Context, s *Staff) error {
+func (m *controllerMockStaffRepo) Update(ctx context.Context, s *Staff) error {
 	m.staff[s.StaffID] = s
 	return nil
 }
 
-func (m *handlerMockStaffRepo) Delete(ctx context.Context, id string) error {
+func (m *controllerMockStaffRepo) Delete(ctx context.Context, id string) error {
 	delete(m.staff, id)
 	return nil
 }
 
-type handlerMockCompanyRepo struct {
+type controllerMockCompanyRepo struct {
 	companies map[string]*company.Company
 }
 
-func newHandlerMockCompanyRepo() *handlerMockCompanyRepo {
-	return &handlerMockCompanyRepo{companies: make(map[string]*company.Company)}
+func newControllerMockCompanyRepo() *controllerMockCompanyRepo {
+	return &controllerMockCompanyRepo{companies: make(map[string]*company.Company)}
 }
 
-func (m *handlerMockCompanyRepo) Create(ctx context.Context, c *company.Company) error {
+func (m *controllerMockCompanyRepo) Create(ctx context.Context, c *company.Company) error {
 	m.companies[c.CompanyCode] = c
 	return nil
 }
 
-func (m *handlerMockCompanyRepo) GetByCode(ctx context.Context, code string) (*company.Company, error) {
+func (m *controllerMockCompanyRepo) GetByCode(ctx context.Context, code string) (*company.Company, error) {
 	c, exists := m.companies[code]
 	if !exists {
 		return nil, fmt.Errorf("%w: company %s", shared.ErrNotFound, code)
@@ -91,7 +91,7 @@ func (m *handlerMockCompanyRepo) GetByCode(ctx context.Context, code string) (*c
 	return c, nil
 }
 
-func (m *handlerMockCompanyRepo) List(ctx context.Context) ([]*company.Company, error) {
+func (m *controllerMockCompanyRepo) List(ctx context.Context) ([]*company.Company, error) {
 	var companies []*company.Company
 	for _, c := range m.companies {
 		companies = append(companies, c)
@@ -99,73 +99,73 @@ func (m *handlerMockCompanyRepo) List(ctx context.Context) ([]*company.Company, 
 	return companies, nil
 }
 
-func (m *handlerMockCompanyRepo) Update(ctx context.Context, c *company.Company) error {
+func (m *controllerMockCompanyRepo) Update(ctx context.Context, c *company.Company) error {
 	m.companies[c.CompanyCode] = c
 	return nil
 }
 
-func (m *handlerMockCompanyRepo) Delete(ctx context.Context, code string) error {
+func (m *controllerMockCompanyRepo) Delete(ctx context.Context, code string) error {
 	delete(m.companies, code)
 	return nil
 }
 
-type handlerMockActionTypeRepo struct{}
+type controllerMockActionTypeRepo struct{}
 
-func newHandlerMockActionTypeRepo() *handlerMockActionTypeRepo { return &handlerMockActionTypeRepo{} }
+func newControllerMockActionTypeRepo() *controllerMockActionTypeRepo { return &controllerMockActionTypeRepo{} }
 
-func (m *handlerMockActionTypeRepo) List(ctx context.Context, companyCode string) ([]company.CompanyActionType, error) {
+func (m *controllerMockActionTypeRepo) List(ctx context.Context, companyCode string) ([]company.CompanyActionType, error) {
 	return []company.CompanyActionType{
 		{ActionType: "CHECK_IN", Keyword: "IN", IsSystem: true},
 		{ActionType: "CHECK_OUT", Keyword: "OUT", IsSystem: true},
 	}, nil
 }
-func (m *handlerMockActionTypeRepo) Get(ctx context.Context, companyCode, actionType string) (*company.CompanyActionType, error) {
+func (m *controllerMockActionTypeRepo) Get(ctx context.Context, companyCode, actionType string) (*company.CompanyActionType, error) {
 	return nil, nil
 }
-func (m *handlerMockActionTypeRepo) Create(ctx context.Context, companyCode string, at *company.CompanyActionType) error {
+func (m *controllerMockActionTypeRepo) Create(ctx context.Context, companyCode string, at *company.CompanyActionType) error {
 	return nil
 }
-func (m *handlerMockActionTypeRepo) UpdateKeyword(ctx context.Context, companyCode, actionType, newKeyword string) error {
+func (m *controllerMockActionTypeRepo) UpdateKeyword(ctx context.Context, companyCode, actionType, newKeyword string) error {
 	return nil
 }
-func (m *handlerMockActionTypeRepo) Delete(ctx context.Context, companyCode, actionType string) error {
+func (m *controllerMockActionTypeRepo) Delete(ctx context.Context, companyCode, actionType string) error {
 	return nil
 }
-func (m *handlerMockActionTypeRepo) SeedDefaults(ctx context.Context, companyCode string) error {
+func (m *controllerMockActionTypeRepo) SeedDefaults(ctx context.Context, companyCode string) error {
 	return nil
 }
-func (m *handlerMockActionTypeRepo) KeywordExists(ctx context.Context, companyCode, keyword string) (bool, error) {
+func (m *controllerMockActionTypeRepo) KeywordExists(ctx context.Context, companyCode, keyword string) (bool, error) {
 	return false, nil
 }
 
 // --- Test setup ---
 
-type staffHandlerTestMocks struct {
-	staffRepo *handlerMockStaffRepo
-	compRepo  *handlerMockCompanyRepo
-	handler   *StaffHandler
+type staffControllerTestMocks struct {
+	staffRepo *controllerMockStaffRepo
+	compRepo  *controllerMockCompanyRepo
+	controller   *StaffController
 	router    *mux.Router
 }
 
-func newStaffHandlerTestMocks() *staffHandlerTestMocks {
-	staffRepo := newHandlerMockStaffRepo()
-	compRepo := newHandlerMockCompanyRepo()
-	atRepo := newHandlerMockActionTypeRepo()
+func newStaffControllerTestMocks() *staffControllerTestMocks {
+	staffRepo := newControllerMockStaffRepo()
+	compRepo := newControllerMockCompanyRepo()
+	atRepo := newControllerMockActionTypeRepo()
 	companyService := company.NewCompanyService(compRepo, atRepo)
 	service := NewStaffService(staffRepo, companyService)
-	handler := NewStaffHandler(service)
+	controller := NewStaffController(service)
 	router := mux.NewRouter()
-	handler.RegisterRoutes(router)
-	return &staffHandlerTestMocks{
+	controller.RegisterRoutes(router)
+	return &staffControllerTestMocks{
 		staffRepo: staffRepo,
 		compRepo:  compRepo,
-		handler:   handler,
+		controller:   controller,
 		router:    router,
 	}
 }
 
-// handlerAddCompanyWithRoles adds a company to the mock company repo
-func handlerAddCompanyWithRoles(compRepo *handlerMockCompanyRepo, code string, roles map[string]float64) {
+// controllerAddCompanyWithRoles adds a company to the mock company repo
+func controllerAddCompanyWithRoles(compRepo *controllerMockCompanyRepo, code string, roles map[string]float64) {
 	c, _ := company.NewCompany(code, code+" Corp")
 	for name, rate := range roles {
 		c.AddRole(name, rate)
@@ -175,12 +175,12 @@ func handlerAddCompanyWithRoles(compRepo *handlerMockCompanyRepo, code string, r
 
 // --- Tests ---
 
-func TestStaffHandler_ListStaff_Success(t *testing.T) {
-	m := newStaffHandlerTestMocks()
-	handlerAddCompanyWithRoles(m.compRepo, "ACME", map[string]float64{"CLEANING": 15.0})
+func TestStaffController_ListStaff_Success(t *testing.T) {
+	m := newStaffControllerTestMocks()
+	controllerAddCompanyWithRoles(m.compRepo, "ACME", map[string]float64{"CLEANING": 15.0})
 
 	// Seed a staff member
-	_, err := m.handler.service.CreateStaff(context.Background(), "uuid-1", "+1234567890", "John Doe", "ACME", []string{"CLEANING"})
+	_, err := m.controller.service.CreateStaff(context.Background(), "uuid-1", "+1234567890", "John Doe", "ACME", []string{"CLEANING"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -202,8 +202,8 @@ func TestStaffHandler_ListStaff_Success(t *testing.T) {
 	}
 }
 
-func TestStaffHandler_ListStaff_MissingCompanyCode(t *testing.T) {
-	m := newStaffHandlerTestMocks()
+func TestStaffController_ListStaff_MissingCompanyCode(t *testing.T) {
+	m := newStaffControllerTestMocks()
 
 	req := httptest.NewRequest("GET", "/api/staff", nil)
 	rec := httptest.NewRecorder()
@@ -214,9 +214,9 @@ func TestStaffHandler_ListStaff_MissingCompanyCode(t *testing.T) {
 	}
 }
 
-func TestStaffHandler_CreateStaff_Success(t *testing.T) {
-	m := newStaffHandlerTestMocks()
-	handlerAddCompanyWithRoles(m.compRepo, "ACME", map[string]float64{"CLEANING": 15.0})
+func TestStaffController_CreateStaff_Success(t *testing.T) {
+	m := newStaffControllerTestMocks()
+	controllerAddCompanyWithRoles(m.compRepo, "ACME", map[string]float64{"CLEANING": 15.0})
 
 	body := `{"staff_id":"uuid-1","phone_number":"+1234567890","name":"John Doe","company_code":"ACME","roles":["CLEANING"]}`
 	req := httptest.NewRequest("POST", "/api/staff", bytes.NewBufferString(body))
@@ -237,8 +237,8 @@ func TestStaffHandler_CreateStaff_Success(t *testing.T) {
 	}
 }
 
-func TestStaffHandler_CreateStaff_InvalidJSON(t *testing.T) {
-	m := newStaffHandlerTestMocks()
+func TestStaffController_CreateStaff_InvalidJSON(t *testing.T) {
+	m := newStaffControllerTestMocks()
 
 	req := httptest.NewRequest("POST", "/api/staff", bytes.NewBufferString("not-json"))
 	req.Header.Set("Content-Type", "application/json")
@@ -250,8 +250,8 @@ func TestStaffHandler_CreateStaff_InvalidJSON(t *testing.T) {
 	}
 }
 
-func TestStaffHandler_CreateStaff_MissingFields(t *testing.T) {
-	m := newStaffHandlerTestMocks()
+func TestStaffController_CreateStaff_MissingFields(t *testing.T) {
+	m := newStaffControllerTestMocks()
 
 	// Empty phone number should trigger domain validation → 400
 	body := `{"staff_id":"uuid-1","phone_number":"","name":"John Doe","company_code":"ACME","roles":[]}`
@@ -265,9 +265,9 @@ func TestStaffHandler_CreateStaff_MissingFields(t *testing.T) {
 	}
 }
 
-func TestStaffHandler_CreateStaff_Duplicate(t *testing.T) {
-	m := newStaffHandlerTestMocks()
-	handlerAddCompanyWithRoles(m.compRepo, "ACME", map[string]float64{"CLEANING": 15.0})
+func TestStaffController_CreateStaff_Duplicate(t *testing.T) {
+	m := newStaffControllerTestMocks()
+	controllerAddCompanyWithRoles(m.compRepo, "ACME", map[string]float64{"CLEANING": 15.0})
 
 	// Create once
 	body := `{"staff_id":"uuid-1","phone_number":"+1234567890","name":"John Doe","company_code":"ACME","roles":["CLEANING"]}`
@@ -289,11 +289,11 @@ func TestStaffHandler_CreateStaff_Duplicate(t *testing.T) {
 	}
 }
 
-func TestStaffHandler_GetStaff_Found(t *testing.T) {
-	m := newStaffHandlerTestMocks()
-	handlerAddCompanyWithRoles(m.compRepo, "ACME", map[string]float64{"CLEANING": 15.0})
+func TestStaffController_GetStaff_Found(t *testing.T) {
+	m := newStaffControllerTestMocks()
+	controllerAddCompanyWithRoles(m.compRepo, "ACME", map[string]float64{"CLEANING": 15.0})
 
-	_, err := m.handler.service.CreateStaff(context.Background(), "uuid-1", "+1234567890", "John Doe", "ACME", []string{"CLEANING"})
+	_, err := m.controller.service.CreateStaff(context.Background(), "uuid-1", "+1234567890", "John Doe", "ACME", []string{"CLEANING"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -315,8 +315,8 @@ func TestStaffHandler_GetStaff_Found(t *testing.T) {
 	}
 }
 
-func TestStaffHandler_GetStaff_NotFound(t *testing.T) {
-	m := newStaffHandlerTestMocks()
+func TestStaffController_GetStaff_NotFound(t *testing.T) {
+	m := newStaffControllerTestMocks()
 
 	req := httptest.NewRequest("GET", "/api/staff/nonexistent", nil)
 	rec := httptest.NewRecorder()
@@ -327,11 +327,11 @@ func TestStaffHandler_GetStaff_NotFound(t *testing.T) {
 	}
 }
 
-func TestStaffHandler_AssignRole_Success(t *testing.T) {
-	m := newStaffHandlerTestMocks()
-	handlerAddCompanyWithRoles(m.compRepo, "ACME", map[string]float64{"CLEANING": 15.0, "DELIVERY": 20.0})
+func TestStaffController_AssignRole_Success(t *testing.T) {
+	m := newStaffControllerTestMocks()
+	controllerAddCompanyWithRoles(m.compRepo, "ACME", map[string]float64{"CLEANING": 15.0, "DELIVERY": 20.0})
 
-	_, err := m.handler.service.CreateStaff(context.Background(), "uuid-1", "+1234567890", "John Doe", "ACME", []string{"CLEANING"})
+	_, err := m.controller.service.CreateStaff(context.Background(), "uuid-1", "+1234567890", "John Doe", "ACME", []string{"CLEANING"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -347,8 +347,8 @@ func TestStaffHandler_AssignRole_Success(t *testing.T) {
 	}
 }
 
-func TestStaffHandler_AssignRole_NotFound(t *testing.T) {
-	m := newStaffHandlerTestMocks()
+func TestStaffController_AssignRole_NotFound(t *testing.T) {
+	m := newStaffControllerTestMocks()
 
 	body := `{"role_name":"CLEANING"}`
 	req := httptest.NewRequest("POST", "/api/staff/nonexistent/roles", bytes.NewBufferString(body))
@@ -361,11 +361,11 @@ func TestStaffHandler_AssignRole_NotFound(t *testing.T) {
 	}
 }
 
-func TestStaffHandler_AssignRole_Duplicate(t *testing.T) {
-	m := newStaffHandlerTestMocks()
-	handlerAddCompanyWithRoles(m.compRepo, "ACME", map[string]float64{"CLEANING": 15.0})
+func TestStaffController_AssignRole_Duplicate(t *testing.T) {
+	m := newStaffControllerTestMocks()
+	controllerAddCompanyWithRoles(m.compRepo, "ACME", map[string]float64{"CLEANING": 15.0})
 
-	_, err := m.handler.service.CreateStaff(context.Background(), "uuid-1", "+1234567890", "John Doe", "ACME", []string{"CLEANING"})
+	_, err := m.controller.service.CreateStaff(context.Background(), "uuid-1", "+1234567890", "John Doe", "ACME", []string{"CLEANING"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -381,11 +381,11 @@ func TestStaffHandler_AssignRole_Duplicate(t *testing.T) {
 	}
 }
 
-func TestStaffHandler_AssignRole_InvalidJSON(t *testing.T) {
-	m := newStaffHandlerTestMocks()
-	handlerAddCompanyWithRoles(m.compRepo, "ACME", map[string]float64{"CLEANING": 15.0})
+func TestStaffController_AssignRole_InvalidJSON(t *testing.T) {
+	m := newStaffControllerTestMocks()
+	controllerAddCompanyWithRoles(m.compRepo, "ACME", map[string]float64{"CLEANING": 15.0})
 
-	_, err := m.handler.service.CreateStaff(context.Background(), "uuid-1", "+1234567890", "John Doe", "ACME", []string{"CLEANING"})
+	_, err := m.controller.service.CreateStaff(context.Background(), "uuid-1", "+1234567890", "John Doe", "ACME", []string{"CLEANING"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -400,11 +400,11 @@ func TestStaffHandler_AssignRole_InvalidJSON(t *testing.T) {
 	}
 }
 
-func TestStaffHandler_UnassignRole_Success(t *testing.T) {
-	m := newStaffHandlerTestMocks()
-	handlerAddCompanyWithRoles(m.compRepo, "ACME", map[string]float64{"CLEANING": 15.0})
+func TestStaffController_UnassignRole_Success(t *testing.T) {
+	m := newStaffControllerTestMocks()
+	controllerAddCompanyWithRoles(m.compRepo, "ACME", map[string]float64{"CLEANING": 15.0})
 
-	_, err := m.handler.service.CreateStaff(context.Background(), "uuid-1", "+1234567890", "John Doe", "ACME", []string{"CLEANING"})
+	_, err := m.controller.service.CreateStaff(context.Background(), "uuid-1", "+1234567890", "John Doe", "ACME", []string{"CLEANING"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -418,16 +418,16 @@ func TestStaffHandler_UnassignRole_Success(t *testing.T) {
 	}
 }
 
-func TestStaffHandler_UnassignRole_RoleNotAssigned(t *testing.T) {
-	m := newStaffHandlerTestMocks()
-	handlerAddCompanyWithRoles(m.compRepo, "ACME", map[string]float64{"CLEANING": 15.0})
+func TestStaffController_UnassignRole_RoleNotAssigned(t *testing.T) {
+	m := newStaffControllerTestMocks()
+	controllerAddCompanyWithRoles(m.compRepo, "ACME", map[string]float64{"CLEANING": 15.0})
 
-	_, err := m.handler.service.CreateStaff(context.Background(), "uuid-1", "+1234567890", "John Doe", "ACME", []string{})
+	_, err := m.controller.service.CreateStaff(context.Background(), "uuid-1", "+1234567890", "John Doe", "ACME", []string{})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	// Staff exists but role is not assigned → handler returns 400 (ErrRoleNotAssigned != shared.ErrNotFound)
+	// Staff exists but role is not assigned → controller returns 400 (ErrRoleNotAssigned != shared.ErrNotFound)
 	req := httptest.NewRequest("DELETE", "/api/staff/uuid-1/roles/NONEXISTENT", nil)
 	rec := httptest.NewRecorder()
 	m.router.ServeHTTP(rec, req)
@@ -437,8 +437,8 @@ func TestStaffHandler_UnassignRole_RoleNotAssigned(t *testing.T) {
 	}
 }
 
-func TestStaffHandler_UnassignRole_StaffNotFound(t *testing.T) {
-	m := newStaffHandlerTestMocks()
+func TestStaffController_UnassignRole_StaffNotFound(t *testing.T) {
+	m := newStaffControllerTestMocks()
 
 	req := httptest.NewRequest("DELETE", "/api/staff/nonexistent/roles/CLEANING", nil)
 	rec := httptest.NewRecorder()
