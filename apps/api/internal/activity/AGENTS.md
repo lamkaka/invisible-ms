@@ -4,7 +4,33 @@
 Records and tracks worker activity logs (check-in, check-out). Processes incoming WhatsApp webhook messages, parses them against company-configured keywords, and computes work sessions with duration and cost.
 
 ## Owned Aggregates
-- **ActivityLog** (aggregate root): `log_id` (UUID, PK), `staff_id`, `company_code`, `role`, `action_type`, `timestamp`, `metadata`
+
+### ActivityLog (Aggregate Root)
+- `log_id` (string, UUID)
+- `staff_id` (string)
+- `company_code` (string)
+- `role` (string) — the role being worked
+- `action_type` (enum) — CHECK_IN, CHECK_OUT, BREAK_START, BREAK_END, OVERTIME_START, etc.
+- `timestamp` (timestamp)
+- `metadata` (JSON, optional) — extra context for future action types
+
+## Database Schema
+
+```sql
+CREATE TABLE activity_logs (
+  log_id STRING(36) NOT NULL,
+  staff_id STRING(36) NOT NULL,
+  company_code STRING(50) NOT NULL,
+  role STRING(50) NOT NULL,
+  action_type STRING(50) NOT NULL,
+  timestamp TIMESTAMP NOT NULL,
+  metadata JSON,
+) PRIMARY KEY (log_id);
+
+CREATE INDEX activity_logs_by_staff ON activity_logs(staff_id, timestamp);
+CREATE INDEX activity_logs_by_company ON activity_logs(company_code, timestamp);
+CREATE INDEX activity_logs_by_action ON activity_logs(company_code, action_type, timestamp);
+```
 
 ## File Inventory
 
@@ -34,6 +60,30 @@ Records and tracks worker activity logs (check-in, check-out). Processes incomin
 | POST | `/webhook/message` | Receive WhatsApp webhook (`X-Webhook-Secret` required) |
 | GET | `/api/activities?staff_id=&company_code=&from=&to=` | List activity logs |
 | GET | `/api/activities/sessions?company_code=&from=&to=` | List computed work sessions |
+
+## Message Processing Flow
+
+### Check-in/Check-out Flow
+1. Worker sends WhatsApp message (e.g., "IN CLEANING" or "OUT")
+2. External gateway (Waha) sends webhook to `POST /webhook/message` with `{ phone, message, company_code }`
+3. App parses the message:
+   - Extracts action (IN/OUT) and optional role
+   - If worker has only one role, "IN" is sufficient
+   - If worker has multiple roles, role must be specified (e.g., "IN CLEANING")
+4. App validates:
+   - Worker exists and is active
+   - Role is assigned to the worker
+   - For CHECK_OUT: worker has an active CHECK_IN for this role
+5. App creates an `ActivityLog` record with the appropriate action type
+6. App responds with confirmation (optional, via webhook response)
+
+### Message Parsing Rules
+- Keywords are case-insensitive (converted to uppercase for matching)
+- Format: `{ACTION} [ROLE]`
+- Valid actions are defined per-company via `CompanyActionType` configuration
+- Default system keywords: `IN` → `CHECK_IN`, `OUT` → `CHECK_OUT`
+- Role is optional if worker has only one assigned role
+- Invalid messages return an error response
 
 ## Cell-Specific Business Rules
 - Webhook requires `X-Webhook-Secret` header (constant-time comparison)
