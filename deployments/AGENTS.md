@@ -18,6 +18,17 @@ cp .env.example .env
 make up
 ```
 
+## Environment Variables
+
+| Variable | Default | Required | Description |
+|----------|---------|----------|-------------|
+| `GCP_SPANNER_PROJECT_ID` | `invisible-ms-local` | Yes | GCP project or emulator project ID |
+| `GCP_SPANNER_INSTANCE_ID` | `invisible-ms-instance` | Yes | Spanner instance name |
+| `GCP_SPANNER_DATABASE_ID` | `invisible-ms-db` | Yes | Spanner database name |
+| `GCP_SPANNER_EMULATOR_HOST` | (empty) | For emulator | Spanner emulator host:port (e.g., localhost:9010) |
+| `PORT` | `8080` | No | HTTP server port |
+| `WEBHOOK_SECRET` | (empty) | For webhooks | Secret value for webhook authentication header |
+
 ## Run migrations only
 
 ```bash

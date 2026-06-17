@@ -22,9 +22,9 @@ import (
 func main() {
 	ctx := context.Background()
 
-	projectID := shared.GetEnv("SPANNER_PROJECT_ID", "ims-project")
-	instanceID := shared.GetEnv("SPANNER_INSTANCE_ID", "invisible-ms-instance")
-	databaseID := shared.GetEnv("SPANNER_DATABASE_ID", "invisible-ms-db")
+	projectID := shared.GetEnv("GCP_SPANNER_PROJECT_ID", "ims-project")
+	instanceID := shared.GetEnv("GCP_SPANNER_INSTANCE_ID", "invisible-ms-instance")
+	databaseID := shared.GetEnv("GCP_SPANNER_DATABASE_ID", "invisible-ms-db")
 
 	// Create instance admin client
 	instanceAdmin, err := instance.NewInstanceAdminClient(ctx)

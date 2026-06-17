@@ -23,13 +23,17 @@ import (
 func main() {
 	ctx := context.Background()
 
-	projectID := os.Getenv("SPANNER_PROJECT_ID")
-	instanceID := os.Getenv("SPANNER_INSTANCE_ID")
-	databaseID := os.Getenv("SPANNER_DATABASE_ID")
-	emulatorHost := os.Getenv("SPANNER_EMULATOR_HOST")
+	projectID := os.Getenv("GCP_SPANNER_PROJECT_ID")
+	instanceID := os.Getenv("GCP_SPANNER_INSTANCE_ID")
+	databaseID := os.Getenv("GCP_SPANNER_DATABASE_ID")
+	emulatorHost := os.Getenv("GCP_SPANNER_EMULATOR_HOST")
 
 	if projectID == "" || instanceID == "" || databaseID == "" {
-		log.Fatal("SPANNER_PROJECT_ID, SPANNER_INSTANCE_ID, and SPANNER_DATABASE_ID must be set")
+		log.Fatal("GCP_SPANNER_PROJECT_ID, GCP_SPANNER_INSTANCE_ID, and GCP_SPANNER_DATABASE_ID must be set")
+	}
+
+	if emulatorHost != "" {
+		os.Setenv("SPANNER_EMULATOR_HOST", emulatorHost)
 	}
 
 	instanceName := fmt.Sprintf("projects/%s/instances/%s", projectID, instanceID)

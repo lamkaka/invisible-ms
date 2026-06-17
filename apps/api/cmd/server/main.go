@@ -52,10 +52,10 @@ func main() {
 	// Initialize controllers
 	companyController := company.NewCompanyController(companyService)
 	staffController := staff.NewStaffController(staffService)
-	activityController := activity.NewActivityController(activityWebhookService, activitySessionService, cfg.WebhookSecret)
+	activityController := activity.NewActivityController(activityWebhookService, activitySessionService, cfg.WA.WebhookSecret)
 	dashboardAPIController := dashboard.NewDashboardAPIController(dashboardService)
 
-	dashboardWebController, err := dashboard.NewDashboardWebController(dashboardService, cfg.TemplatesPath)
+	dashboardWebController, err := dashboard.NewDashboardWebController(dashboardService, cfg.Web.TemplatesPath)
 	if err != nil {
 		log.Fatalf("Failed to create dashboard web controller: %v", err)
 	}
@@ -63,7 +63,7 @@ func main() {
 	// Setup router
 	router := mux.NewRouter()
 	router.Use(shared.LoggingMiddleware)
-	router.Use(shared.CORSMiddleware(cfg.CORSAllowedOrigins))
+	router.Use(shared.CORSMiddleware(cfg.Web.CORSAllowedOrigins))
 
 	// Register routes
 	companyController.RegisterRoutes(router)
@@ -73,11 +73,11 @@ func main() {
 	dashboardWebController.RegisterRoutes(router)
 
 	// Serve static files
-	router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir(cfg.StaticPath))))
+	router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir(cfg.Web.StaticPath))))
 
 	// Create server
 	server := &http.Server{
-		Addr:         fmt.Sprintf(":%d", cfg.Port),
+		Addr:         fmt.Sprintf(":%d", cfg.Server.Port),
 		Handler:      router,
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
@@ -86,7 +86,7 @@ func main() {
 
 	// Start server
 	go func() {
-		log.Printf("Server starting on port %d", cfg.Port)
+		log.Printf("Server starting on port %d", cfg.Server.Port)
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("Server failed: %v", err)
 		}

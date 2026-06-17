@@ -65,10 +65,10 @@ make docker-build
 
 2. Set environment variables:
    ```bash
-   export SPANNER_PROJECT_ID=invisible-ms-local
-   export SPANNER_INSTANCE_ID=invisible-ms-instance
-   export SPANNER_DATABASE_ID=invisible-ms-db
-   export SPANNER_EMULATOR_HOST=localhost:9010
+   export GCP_SPANNER_PROJECT_ID=invisible-ms-local
+   export GCP_SPANNER_INSTANCE_ID=invisible-ms-instance
+   export GCP_SPANNER_DATABASE_ID=invisible-ms-db
+   export GCP_SPANNER_EMULATOR_HOST=localhost:9010
    export PORT=8080
    export WEBHOOK_SECRET=test-secret
    ```
@@ -87,17 +87,6 @@ make docker-build
    ```bash
    cd apps/api && go run ./cmd/setup
    ```
-
-## Environment Variables
-
-| Variable | Default | Required | Description |
-|----------|---------|----------|-------------|
-| `SPANNER_PROJECT_ID` | `invisible-ms-local` | Yes | GCP project or emulator project ID |
-| `SPANNER_INSTANCE_ID` | `invisible-ms-instance` | Yes | Spanner instance name |
-| `SPANNER_DATABASE_ID` | `invisible-ms-db` | Yes | Spanner database name |
-| `SPANNER_EMULATOR_HOST` | (empty) | For emulator | Spanner emulator host:port (e.g., localhost:9010) |
-| `PORT` | `8080` | No | HTTP server port |
-| `WEBHOOK_SECRET` | (empty) | For webhooks | Secret value for webhook authentication header |
 
 ## Makefile Targets
 

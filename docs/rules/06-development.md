@@ -27,14 +27,28 @@
 - `apps/api/internal/shared/config.go` loads and validates config
 - `shared.GetEnv(key, defaultValue)` helper for safe env var reading
 
-### Config fields:
+### Config struct (`Config` in `config.go`):
+
+**Server**
 | Variable | Default | Description |
 |---|---|---|
 | `PORT` | `8080` | HTTP server port |
-| `SPANNER_PROJECT_ID` | — | GCP project ID |
-| `SPANNER_INSTANCE_ID` | — | Spanner instance ID |
-| `SPANNER_DATABASE_ID` | — | Spanner database ID |
+
+**GCP**
+| Variable | Default | Description |
+|---|---|---|
+| `GCP_SPANNER_PROJECT_ID` | — | GCP project ID |
+| `GCP_SPANNER_INSTANCE_ID` | — | Spanner instance ID |
+| `GCP_SPANNER_DATABASE_ID` | — | Spanner database ID |
+
+**WA (webhook)**
+| Variable | Default | Description |
+|---|---|---|
 | `WEBHOOK_SECRET` | — | Secret for webhook auth |
+
+**Web**
+| Variable | Default | Description |
+|---|---|---|
 | `CORS_ALLOWED_ORIGINS` | `*` | CORS origins |
 | `TEMPLATES_PATH` | `../web/templates` | HTML templates dir |
 | `STATIC_PATH` | `../web/static` | Static files dir |

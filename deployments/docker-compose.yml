@@ -1,8 +1,8 @@
 x-env: &spanner-env
-  SPANNER_PROJECT_ID: ${SPANNER_PROJECT_ID:-invisible-ms-local}
-  SPANNER_INSTANCE_ID: ${SPANNER_INSTANCE_ID:-invisible-ms-instance}
-  SPANNER_DATABASE_ID: ${SPANNER_DATABASE_ID:-invisible-ms-db}
-  SPANNER_EMULATOR_HOST: spanner-emulator:9010
+  GCP_SPANNER_PROJECT_ID: ${GCP_SPANNER_PROJECT_ID:-invisible-ms-local}
+  GCP_SPANNER_INSTANCE_ID: ${GCP_SPANNER_INSTANCE_ID:-invisible-ms-instance}
+  GCP_SPANNER_DATABASE_ID: ${GCP_SPANNER_DATABASE_ID:-invisible-ms-db}
+  GCP_SPANNER_EMULATOR_HOST: spanner-emulator:9010
 
 services:
   spanner-emulator:
