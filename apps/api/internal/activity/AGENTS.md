@@ -86,7 +86,40 @@ CREATE INDEX activity_logs_by_action ON activity_logs(company_code, action_type,
 - Invalid messages return an error response
 - Messages with more than 2 words are rejected with ErrExtraWords
 
+## WhatsApp Commands
+
+Workers send messages from their phone to a WhatsApp number. The external Waha gateway forwards these as webhook requests to the application.
+
+### Command Format
+
+```
+{KEYWORD} [{ROLE}]
+```
+
+Keywords are case-insensitive.
+
+### Examples
+
+| Message | Action | Notes |
+|---------|--------|-------|
+| `IN CLEANING` | Check in for CLEANING role | Role required when staff has multiple roles |
+| `IN` | Check in for only assigned role | Works when staff has exactly one role |
+| `OUT` | Check out | Ends active session for any role |
+| `BREAK` | Start break | Requires custom action type configuration |
+
+### Default System Actions
+
+| Action Type | Keyword | Description |
+|-------------|---------|-------------|
+| `CHECK_IN` | `IN` | Start a work session |
+| `CHECK_OUT` | `OUT` | End a work session |
+
+Companies can define custom action types (e.g., `BREAK_START`, `OVERTIME_START`) with their own keywords.
+
 ## Cell-Specific Business Rules
+- Workers are identified by phone number + company code
+- Workers must be active and have at least one role assigned
+- Check-in validates the role exists in the company catalog
 - Check-out validates an active check-in exists atomically (within ReadWriteTransaction)
 - Double check-out (no active check-in) is rejected with `ErrNoActiveCheckIn`
 - Session pairing: in-memory pairing of check-ins → check-outs by staff+role; unpaired check-ins are ignored
