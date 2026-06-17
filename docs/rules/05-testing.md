@@ -35,3 +35,20 @@
 - `{entity}_{layer}_test.go` — matches the source file naming pattern
 - Test files live in the same package as the code they test (white-box testing)
 - Integration tests that require Spanner emulator should use build tag `//go:build integration`
+
+## Test Inventory
+
+| Layer | Test Files | Count |
+|-------|-----------|-------|
+| Company domain | `company_domain_test.go` | 6 tests |
+| Company service | `company_service_test.go` | 3 tests |
+| Staff domain | `staff_domain_test.go` | 6 tests |
+| Staff service | `staff_service_test.go` | 5 tests |
+| Activity domain | `activity_domain_test.go` | 4 tests |
+| Activity service | `activity_service_test.go` | 3 tests |
+| Dashboard service | `dashboard_service_test.go` | 1 test |
+
+- **Domain tests**: Pure unit tests with no external dependencies.
+- **Service tests**: Use mock repositories to verify orchestration logic.
+- **Repository tests**: Integration tests against Spanner emulator (not yet implemented).
+- **Controller tests**: HTTP tests with mock services (not yet implemented).
