@@ -419,3 +419,57 @@ func TestCompanyService_DeleteActionType_SystemType(t *testing.T) {
 		t.Errorf("expected ErrCannotDeleteSystemActionType, got %v", err)
 	}
 }
+
+func TestCompanyService_RemoveRole_Success(t *testing.T) {
+	repo := NewMockCompanyRepository()
+	atRepo := NewMockActionTypeRepository()
+	service := NewCompanyService(repo, atRepo)
+	ctx := context.Background()
+
+	_, err := service.CreateCompany(ctx, "ACME", "Acme Corp")
+	if err != nil {
+		t.Fatalf("failed to create company: %v", err)
+	}
+	if err := service.AddRole(ctx, "ACME", "CLEANING", 15.0); err != nil {
+		t.Fatalf("failed to add role: %v", err)
+	}
+
+	err = service.RemoveRole(ctx, "ACME", "CLEANING")
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+
+	company, _ := service.GetCompany(ctx, "ACME")
+	if company.HasRole("CLEANING") {
+		t.Error("expected role to be removed")
+	}
+}
+
+func TestCompanyService_UpdateRole_RoleNotFound(t *testing.T) {
+	repo := NewMockCompanyRepository()
+	atRepo := NewMockActionTypeRepository()
+	service := NewCompanyService(repo, atRepo)
+	ctx := context.Background()
+
+	_, err := service.CreateCompany(ctx, "ACME", "Acme Corp")
+	if err != nil {
+		t.Fatalf("failed to create company: %v", err)
+	}
+
+	err = service.UpdateRole(ctx, "ACME", "CLEANING", 20.0)
+	if !errors.Is(err, ErrRoleNotFound) {
+		t.Errorf("expected ErrRoleNotFound, got %v", err)
+	}
+}
+
+func TestCompanyService_ListRoles_CompanyNotFound(t *testing.T) {
+	repo := NewMockCompanyRepository()
+	atRepo := NewMockActionTypeRepository()
+	service := NewCompanyService(repo, atRepo)
+	ctx := context.Background()
+
+	_, err := service.ListRoles(ctx, "NONEXISTENT")
+	if !errors.Is(err, ErrCompanyNotFound) {
+		t.Errorf("expected ErrCompanyNotFound, got %v", err)
+	}
+}
