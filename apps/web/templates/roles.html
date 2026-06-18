@@ -28,8 +28,12 @@
         <table class="data-table">
             <thead>
                 <tr>
-                    <th>Role</th>
-                    <th>Hourly Rate</th>
+                    <th @click="sortBy('name')" class="sortable">
+                        Role<span class="sort-indicator" x-text="sortIndicator('name')"></span>
+                    </th>
+                    <th @click="sortBy('hourly_rate')" class="sortable">
+                        Hourly Rate<span class="sort-indicator" x-text="sortIndicator('hourly_rate')"></span>
+                    </th>
                     <th>Actions</th>
                 </tr>
             </thead>

@@ -1,5 +1,10 @@
 COMPANY_CODE ?= ACME
 COMPANY_NAME ?= ACME Corp
+COMPANIES ?= 1
+ROLES_PER_COMPANY ?= 3
+STAFF_PER_COMPANY ?= 5
+CHECKOUT_FRACTION ?= 1.0
+MAX_SESSION_SECONDS ?= 2.0
 
 .PHONY: build run test migrate seed docker-build docker-up docker-down docker-logs docker-restart
 
@@ -23,8 +28,8 @@ seed:
 		--webhook-secret "$$WEBHOOK_SECRET" \
 		--company-code "$(COMPANY_CODE)" \
 		--company-name "$(COMPANY_NAME)" \
-		--companies 1 --roles-per-company 3 --staff-per-company 5 \
-		--checkout-fraction 1.0 --max-session-seconds 2.0
+		--companies $(COMPANIES) --roles-per-company $(ROLES_PER_COMPANY) --staff-per-company $(STAFF_PER_COMPANY) \
+		--checkout-fraction $(CHECKOUT_FRACTION) --max-session-seconds $(MAX_SESSION_SECONDS)
 
 docker-build:
 	docker compose build

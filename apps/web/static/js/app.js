@@ -54,8 +54,12 @@ document.addEventListener('alpine:init', () => {
         formatHours(hours) {
             if (!hours && hours !== 0) return '0.00';
             const h = parseFloat(hours);
+            const minutes = h * 60;
+            if (minutes < 1) {
+                return (minutes * 60).toFixed(1) + 's';
+            }
             if (h < 1) {
-                return (h * 60).toFixed(0) + 'm';
+                return minutes.toFixed(1) + 'm';
             }
             return h.toFixed(2) + 'h';
         },
@@ -91,6 +95,9 @@ document.addEventListener('alpine:init', () => {
     // ============================================
     Alpine.data('staff', () => ({
         staffList: [],
+        availableRoles: [],
+        sortKey: null,
+        sortAsc: true,
         loading: false,
         error: null,
         showCreateModal: false,
@@ -104,7 +111,21 @@ document.addEventListener('alpine:init', () => {
         },
 
         async init() {
-            await this.fetchStaff();
+            await Promise.all([
+                this.fetchStaff(),
+                this.fetchRoles()
+            ]);
+        },
+
+        async fetchRoles() {
+            try {
+                const response = await fetch('/api/companies/ACME/roles');
+                if (!response.ok) return;
+                const roles = await response.json();
+                this.availableRoles = roles.map(r => r.name);
+            } catch (err) {
+                console.error('Failed to fetch roles:', err);
+            }
         },
 
         async fetchStaff() {
@@ -117,12 +138,46 @@ document.addEventListener('alpine:init', () => {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 this.staffList = await response.json();
+                this.applySort();
             } catch (err) {
                 this.error = err.message;
                 console.error('Failed to fetch staff:', err);
             } finally {
                 this.loading = false;
             }
+        },
+
+        sortBy(key) {
+            if (this.sortKey === key) {
+                this.sortAsc = !this.sortAsc;
+            } else {
+                this.sortKey = key;
+                this.sortAsc = true;
+            }
+            this.applySort();
+        },
+
+        applySort() {
+            if (!this.sortKey) return;
+            const key = this.sortKey;
+            const asc = this.sortAsc;
+            this.staffList.sort((a, b) => {
+                let va = a[key], vb = b[key];
+                if (typeof va === 'string') {
+                    va = va.toLowerCase();
+                    vb = (vb || '').toLowerCase();
+                }
+                if (va == null) va = '';
+                if (vb == null) vb = '';
+                if (va < vb) return asc ? -1 : 1;
+                if (va > vb) return asc ? 1 : -1;
+                return 0;
+            });
+        },
+
+        sortIndicator(key) {
+            if (this.sortKey !== key) return '';
+            return this.sortAsc ? ' ▲' : ' ▼';
         },
 
         getInitials(name) {
@@ -224,6 +279,8 @@ document.addEventListener('alpine:init', () => {
     // ============================================
     Alpine.data('actionTypes', () => ({
         actionTypes: [],
+        sortKey: null,
+        sortAsc: true,
         loading: false,
         error: null,
         showCreateModal: false,
@@ -252,12 +309,46 @@ document.addEventListener('alpine:init', () => {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 this.actionTypes = await response.json();
+                this.applySort();
             } catch (err) {
                 this.error = err.message;
                 console.error('Failed to fetch action types:', err);
             } finally {
                 this.loading = false;
             }
+        },
+
+        sortBy(key) {
+            if (this.sortKey === key) {
+                this.sortAsc = !this.sortAsc;
+            } else {
+                this.sortKey = key;
+                this.sortAsc = true;
+            }
+            this.applySort();
+        },
+
+        applySort() {
+            if (!this.sortKey) return;
+            const key = this.sortKey;
+            const asc = this.sortAsc;
+            this.actionTypes.sort((a, b) => {
+                let va = a[key], vb = b[key];
+                if (typeof va === 'string') {
+                    va = va.toLowerCase();
+                    vb = (vb || '').toLowerCase();
+                }
+                if (va == null) va = '';
+                if (vb == null) vb = '';
+                if (va < vb) return asc ? -1 : 1;
+                if (va > vb) return asc ? 1 : -1;
+                return 0;
+            });
+        },
+
+        sortIndicator(key) {
+            if (this.sortKey !== key) return '';
+            return this.sortAsc ? ' ▲' : ' ▼';
         },
 
         editActionType(actionType) {
@@ -355,6 +446,8 @@ document.addEventListener('alpine:init', () => {
     // ============================================
     Alpine.data('roles', () => ({
         roles: [],
+        sortKey: null,
+        sortAsc: true,
         loading: false,
         error: null,
         showCreateModal: false,
@@ -383,12 +476,46 @@ document.addEventListener('alpine:init', () => {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 this.roles = await response.json();
+                this.applySort();
             } catch (err) {
                 this.error = err.message;
                 console.error('Failed to fetch roles:', err);
             } finally {
                 this.loading = false;
             }
+        },
+
+        sortBy(key) {
+            if (this.sortKey === key) {
+                this.sortAsc = !this.sortAsc;
+            } else {
+                this.sortKey = key;
+                this.sortAsc = true;
+            }
+            this.applySort();
+        },
+
+        applySort() {
+            if (!this.sortKey) return;
+            const key = this.sortKey;
+            const asc = this.sortAsc;
+            this.roles.sort((a, b) => {
+                let va = a[key], vb = b[key];
+                if (typeof va === 'string') {
+                    va = va.toLowerCase();
+                    vb = (vb || '').toLowerCase();
+                }
+                if (va == null) va = '';
+                if (vb == null) vb = '';
+                if (va < vb) return asc ? -1 : 1;
+                if (va > vb) return asc ? 1 : -1;
+                return 0;
+            });
+        },
+
+        sortIndicator(key) {
+            if (this.sortKey !== key) return '';
+            return this.sortAsc ? ' ▲' : ' ▼';
         },
 
         editRole(role) {

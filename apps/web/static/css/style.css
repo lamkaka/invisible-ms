@@ -192,8 +192,21 @@ body {
 }
 
 .btn-icon {
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
+}
+
+.action-buttons .btn {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    align-items: center;
+    justify-content: center;
+}
+
+.action-buttons .btn svg {
+    width: 20px;
+    height: 20px;
 }
 
 .btn-primary {
@@ -390,6 +403,20 @@ body {
     background: var(--bg-body);
 }
 
+.data-table th.sortable {
+    cursor: pointer;
+    user-select: none;
+}
+
+.data-table th.sortable:hover {
+    color: var(--text-primary);
+}
+
+.sort-indicator {
+    font-size: 0.625rem;
+    margin-left: 2px;
+}
+
 .data-table td {
     padding: 14px 20px;
     font-size: 0.875rem;
@@ -482,7 +509,7 @@ body {
 }
 
 .action-buttons .btn {
-    padding: 6px;
+    padding: 10px;
     background: transparent;
     color: var(--text-muted);
     border-radius: var(--radius-sm);

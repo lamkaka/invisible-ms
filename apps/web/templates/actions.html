@@ -31,9 +31,15 @@
         <table class="data-table">
             <thead>
                 <tr>
-                    <th>Action</th>
-                    <th>Keyword</th>
-                    <th>Type</th>
+                    <th @click="sortBy('action_type')" class="sortable">
+                        Action<span class="sort-indicator" x-text="sortIndicator('action_type')"></span>
+                    </th>
+                    <th @click="sortBy('keyword')" class="sortable">
+                        Keyword<span class="sort-indicator" x-text="sortIndicator('keyword')"></span>
+                    </th>
+                    <th @click="sortBy('is_system')" class="sortable">
+                        Type<span class="sort-indicator" x-text="sortIndicator('is_system')"></span>
+                    </th>
                     <th>Actions</th>
                 </tr>
             </thead>

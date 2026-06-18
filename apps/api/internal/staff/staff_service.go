@@ -106,6 +106,41 @@ func (s *StaffService) UnassignRole(ctx context.Context, staffID, roleName strin
 	return s.repo.Update(ctx, staff)
 }
 
+func (s *StaffService) UpdateStaff(ctx context.Context, id, name, phone string, roles []string, isActiveSet bool, isActive *bool) (*Staff, error) {
+	existing, err := s.repo.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	// Validate roles exist in company catalog
+	companyEntity, err := s.companyService.GetCompany(ctx, existing.CompanyCode)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get company: %w", err)
+	}
+	for _, roleName := range roles {
+		if !companyEntity.HasRole(roleName) {
+			return nil, fmt.Errorf("role %s does not exist in company %s", roleName, existing.CompanyCode)
+		}
+	}
+
+	if name != "" {
+		existing.Name = name
+	}
+	if phone != "" {
+		existing.PhoneNumber = phone
+	}
+	if isActiveSet {
+		existing.IsActive = *isActive
+	}
+	existing.AssignedRoles = roles
+
+	if err := s.repo.Update(ctx, existing); err != nil {
+		return nil, err
+	}
+
+	return existing, nil
+}
+
 func (s *StaffService) DeactivateStaff(ctx context.Context, staffID string) error {
 	staff, err := s.repo.GetByID(ctx, staffID)
 	if err != nil {

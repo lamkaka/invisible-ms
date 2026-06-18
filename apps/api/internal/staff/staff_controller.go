@@ -24,6 +24,7 @@ func (h *StaffController) RegisterRoutes(r chi.Router) {
 		r.Post("/", h.CreateStaff)
 		r.Route("/{id}", func(r chi.Router) {
 			r.Get("/", h.GetStaff)
+			r.Put("/", h.UpdateStaff)
 			r.Route("/roles", func(r chi.Router) {
 				r.Post("/", h.AssignRole)
 				r.Delete("/{role}", h.UnassignRole)
@@ -93,6 +94,41 @@ func (h *StaffController) GetStaff(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(staff)
+}
+
+func (h *StaffController) UpdateStaff(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+
+	var req struct {
+		StaffID       string   `json:"staff_id"`
+		PhoneNumber   string   `json:"phone_number"`
+		Name          string   `json:"name"`
+		CompanyCode   string   `json:"company_code"`
+		AssignedRoles []string `json:"assigned_roles"`
+		IsActive      *bool    `json:"is_active"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	var isActiveSet bool
+	if req.IsActive != nil {
+		isActiveSet = true
+	}
+
+	updated, err := h.service.UpdateStaff(r.Context(), id, req.Name, req.PhoneNumber, req.AssignedRoles, isActiveSet, req.IsActive)
+	if err != nil {
+		if shared.IsNotFound(err) {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(updated)
 }
 
 func (h *StaffController) AssignRole(w http.ResponseWriter, r *http.Request) {
