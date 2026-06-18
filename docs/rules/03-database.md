@@ -7,15 +7,15 @@
 - DDL is applied before DML.
 - Existing DDL objects are skipped with a warning.
 
-## Spanner Transaction Patterns
+## Transaction Patterns
 
-Use `ReadWriteTransaction` for:
+Use read-write transactions for:
 
 - Multi-table operations
 - Operations that must be atomic
 - Updates that modify related entities
 
-Use single `Apply` for:
+Use single operations for:
 
 - Single-table operations
 - Read-only operations
@@ -23,26 +23,23 @@ Use single `Apply` for:
 
 ## Query Guidance
 
-- Push aggregations (`SUM`, `COUNT`, `AVG`) to Spanner SQL rather than computing in Go.
-- Use `TIMESTAMP_DIFF` for duration calculations.
-- Pair sessions with correlated subqueries when computing read-side sessions in SQL.
+- Push aggregations (`SUM`, `COUNT`, `AVG`) to the database rather than computing in application memory.
+- Use database-native functions for duration, date, and numeric calculations.
+- Pair related events or records with correlated subqueries when computing read-side views in SQL.
 
 ## Index Usage Principles
 
 - Add indexes to support lookup patterns, not speculative ones.
-- Use unique indexes to enforce business constraints (e.g., phone number per company).
+- Use unique indexes to enforce business constraints.
 - Document the purpose of each index near the query that needs it.
 
 ## Per-Cell Schema
 
-- Company, role, and action type schemas live in [`apps/api/internal/company/AGENTS.md`](../../apps/api/internal/company/AGENTS.md).
-- Staff schema lives in [`apps/api/internal/staff/AGENTS.md`](../../apps/api/internal/staff/AGENTS.md).
-- Activity log schema lives in [`apps/api/internal/activity/AGENTS.md`](../../apps/api/internal/activity/AGENTS.md).
-- Dashboard query patterns live in [`apps/api/internal/dashboard/AGENTS.md`](../../apps/api/internal/dashboard/AGENTS.md).
+- Each cell's concrete schema, table relationships, and query patterns live in the cell's `AGENTS.md`.
 
 ## Design Decisions
 
-- **Interleaved tables**: `company_roles`, `company_action_types`, and `staff_roles` are interleaved in their parent tables for locality and cascade deletes.
-- **Denormalized `company_code`** in `staff_roles` enables efficient interleaving and prevents cross-tenant role assignments.
-- **SQL aggregations**: Dashboard stats are computed in SQL (not in application memory) to handle large datasets efficiently.
-- **Atomic check-out**: Check-out operations use a `ReadWriteTransaction` to verify active check-in and create the log atomically, preventing double-check-out race conditions.
+- **Interleaved tables**: Use interleaving for parent-child relationships that require locality and cascade deletes.
+- **Denormalized tenant keys**: Duplicate tenant identifiers where they enable efficient querying and prevent cross-tenant references.
+- **SQL aggregations**: Compute aggregate statistics in SQL rather than in application memory to handle large datasets efficiently.
+- **Atomic state transitions**: Operations that validate and mutate related state use read-write transactions to prevent race conditions.

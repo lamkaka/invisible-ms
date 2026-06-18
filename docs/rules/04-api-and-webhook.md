@@ -30,7 +30,4 @@ Controllers must not contain business logic.
 
 ## Per-Cell Endpoints
 
-- Company, role, and action type endpoints live in [`apps/api/internal/company/AGENTS.md`](../../apps/api/internal/company/AGENTS.md).
-- Staff endpoints live in [`apps/api/internal/staff/AGENTS.md`](../../apps/api/internal/staff/AGENTS.md).
-- Webhook and activity endpoints live in [`apps/api/internal/activity/AGENTS.md`](../../apps/api/internal/activity/AGENTS.md).
-- Dashboard endpoints live in [`apps/api/internal/dashboard/AGENTS.md`](../../apps/api/internal/dashboard/AGENTS.md).
+- Each cell's concrete endpoints and request/response shapes live in the cell's `AGENTS.md`.
