@@ -1,0 +1,140 @@
+{{template "layout.html" .}}
+
+{{define "title"}}Roles - IMS{{end}}
+
+{{define "content"}}
+<div class="roles-page" x-data="roles()" x-init="init()">
+    <header class="page-header">
+        <h1>Roles</h1>
+        <button @click="showCreateModal = true" class="btn btn-primary">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Add Role
+        </button>
+    </header>
+
+    <div class="loading-state" x-show="loading && !roles.length">
+        <div class="spinner"></div>
+        <p>Loading roles...</p>
+    </div>
+
+    <div class="error-state" x-show="error">
+        <p>Error loading data: <span x-text="error"></span></p>
+    </div>
+
+    <div class="table-container" x-show="roles.length">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Role</th>
+                    <th>Hourly Rate</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <template x-for="role in roles" :key="role.name">
+                    <tr>
+                        <td><span class="role-badge" x-text="role.name"></span></td>
+                        <td x-text="formatCurrency(role.hourly_rate)"></td>
+                        <td>
+                            <div class="action-buttons">
+                                <button @click="editRole(role)" class="btn btn-icon" title="Edit Rate">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                                        <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                    </svg>
+                                </button>
+                                <button @click="deleteRole(role)" class="btn btn-icon" title="Delete">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="3,6 5,6 21,6"/>
+                                        <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                                        <line x1="10" y1="11" x2="10" y2="17"/>
+                                        <line x1="14" y1="11" x2="14" y2="17"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                </template>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="empty-state" x-show="!loading && !roles.length">
+        <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+        </svg>
+        <h3>No roles found</h3>
+        <p>Get started by adding your first role</p>
+    </div>
+
+    <div class="modal-overlay" x-show="showCreateModal || showEditModal" x-transition.opacity>
+        <div class="modal" @click.away="closeModal()">
+            <div class="modal-header">
+                <h2 x-text="showEditModal ? 'Edit Rate' : 'Add Role'"></h2>
+                <button @click="closeModal()" class="modal-close">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <form @submit.prevent="saveRole()" class="modal-form">
+                <div class="form-group" x-show="!showEditModal">
+                    <label for="roleName">Role Name</label>
+                    <input type="text" id="roleName" x-model="form.name" required placeholder="e.g., SECURITY">
+                    <p class="form-hint">Use uppercase with underscores</p>
+                </div>
+                <div class="form-group" x-show="showEditModal">
+                    <label>Role</label>
+                    <p class="form-value" x-text="form.name"></p>
+                </div>
+                <div class="form-group">
+                    <label for="hourlyRate">Hourly Rate ($)</label>
+                    <input type="number" id="hourlyRate" x-model="form.hourly_rate" required min="0" step="0.01" placeholder="20.00">
+                </div>
+                <div class="form-error" x-show="formError">
+                    <p x-text="formError"></p>
+                </div>
+                <div class="form-actions">
+                    <button type="button" @click="closeModal()" class="btn btn-secondary">Cancel</button>
+                    <button type="submit" class="btn btn-primary" :disabled="saving">
+                        <span x-show="!saving">Save</span>
+                        <span x-show="saving">Saving...</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal-overlay" x-show="showDeleteModal" x-transition.opacity>
+        <div class="modal" @click.away="closeModal()">
+            <div class="modal-header">
+                <h2>Delete Role</h2>
+                <button @click="closeModal()" class="modal-close">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-form">
+                <p>Are you sure you want to delete <strong x-text="form.name"></strong>?</p>
+                <p class="form-hint">This action cannot be undone.</p>
+                <div class="form-error" x-show="formError">
+                    <p x-text="formError"></p>
+                </div>
+                <div class="form-actions">
+                    <button type="button" @click="closeModal()" class="btn btn-secondary">Cancel</button>
+                    <button type="button" @click="confirmDelete()" class="btn btn-danger" :disabled="saving">
+                        <span x-show="!saving">Delete</span>
+                        <span x-show="saving">Deleting...</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{{end}}

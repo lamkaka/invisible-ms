@@ -120,6 +120,7 @@ func writeAllTemplates(t *testing.T, dir string) {
 	writeTestTemplate(t, dir, "dashboard.html", `{{template "layout.html" .}}{{define "content"}}Dashboard Content{{end}}`)
 	writeTestTemplate(t, dir, "staff.html", `{{template "layout.html" .}}{{define "content"}}Staff Content{{end}}`)
 	writeTestTemplate(t, dir, "actions.html", `{{template "layout.html" .}}{{define "content"}}Actions Content{{end}}`)
+	writeTestTemplate(t, dir, "roles.html", `{{template "layout.html" .}}{{define "content"}}Roles Content{{end}}`)
 }
 
 func TestDashboardWebController_DashboardPage_Success(t *testing.T) {
@@ -209,6 +210,34 @@ func TestDashboardWebController_ActionsPage_Success(t *testing.T) {
 	body := rec.Body.String()
 	if body != "Actions Content" {
 		t.Errorf("expected 'Actions Content', got %q", body)
+	}
+}
+
+func TestDashboardWebController_RolesPage_Success(t *testing.T) {
+	dir := t.TempDir()
+	writeAllTemplates(t, dir)
+
+	repo := newWebMockDashboardRepo()
+	service := NewDashboardService(repo)
+	controller, err := NewDashboardWebController(service, dir)
+	if err != nil {
+		t.Fatalf("failed to create web controller: %v", err)
+	}
+
+	router := chi.NewRouter()
+	controller.RegisterRoutes(router)
+
+	req := httptest.NewRequest("GET", "/roles", nil)
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Errorf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+
+	body := rec.Body.String()
+	if body != "Roles Content" {
+		t.Errorf("expected 'Roles Content', got %q", body)
 	}
 }
 
