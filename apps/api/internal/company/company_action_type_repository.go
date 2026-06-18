@@ -39,7 +39,7 @@ func (r *SpannerCompanyActionTypeRepository) List(ctx context.Context, companyCo
 	iter := r.client.Single().Query(ctx, stmt)
 	defer iter.Stop()
 
-	var result []CompanyActionType
+	result := []CompanyActionType{}
 	for {
 		row, err := iter.Next()
 		if err == iterator.Done {

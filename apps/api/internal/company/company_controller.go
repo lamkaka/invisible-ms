@@ -144,10 +144,6 @@ func (h *CompanyController) ListActionTypes(w http.ResponseWriter, r *http.Reque
 
 	actionTypes, err := h.service.ListActionTypes(r.Context(), code)
 	if err != nil {
-		if shared.IsNotFound(err) {
-			http.Error(w, err.Error(), http.StatusNotFound)
-			return
-		}
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

@@ -70,12 +70,6 @@ func (s *CompanyService) RemoveRole(ctx context.Context, companyCode, roleName s
 // --- Action Type Management ---
 
 func (s *CompanyService) ListActionTypes(ctx context.Context, companyCode string) ([]CompanyActionType, error) {
-	// Verify company exists
-	_, err := s.repo.GetByCode(ctx, companyCode)
-	if err != nil {
-		return nil, err
-	}
-
 	return s.actionTypes.List(ctx, companyCode)
 }
 
