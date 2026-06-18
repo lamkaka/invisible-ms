@@ -165,8 +165,11 @@ def seed(args):
             client.create_company(company["code"], company["name"])
             print(f"Created company {company['code']} - {company['name']}")
         except requests.HTTPError as exc:
-            print(f"Skipping company {company['code']}: {exc.response.text}")
-            continue
+            if exc.response.status_code == 409:
+                print(f"Company {company['code']} already exists, using it")
+            else:
+                print(f"Skipping company {company['code']}: {exc.response.text}")
+                continue
 
         # Seed action types (overrides are skipped with 409)
         action_types = [
