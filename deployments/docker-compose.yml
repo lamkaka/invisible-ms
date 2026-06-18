@@ -4,12 +4,17 @@ x-env: &spanner-env
   GCP_SPANNER_DATABASE_ID: ${GCP_SPANNER_DATABASE_ID:-invisible-ms-db}
   GCP_SPANNER_EMULATOR_HOST: spanner-emulator:9010
 
+volumes:
+  spanner-data:
+
 services:
   spanner-emulator:
     image: gcr.io/cloud-spanner-emulator/emulator:latest
     ports:
       - "9010:9010"
       - "9020:9020"
+    volumes:
+      - spanner-data:/data
 
   migrate:
     build:

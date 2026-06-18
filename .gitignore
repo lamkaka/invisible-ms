@@ -21,6 +21,9 @@ vendor/
 # Environment
 .env
 
+# Python virtual environment
+.venv/
+
 # Superpowers
 .superpowers/
 
