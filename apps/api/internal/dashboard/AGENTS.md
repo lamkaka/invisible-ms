@@ -1,5 +1,7 @@
 # Dashboard Cell
 
+This guide covers the dashboard cell only. It provides read-only aggregated views of activity across cells. For project-wide conventions and task routing, read the root AGENTS.md.
+
 ## Purpose
 Provides aggregated read-only views of company activity: today's overview, cost tracking, staff activity metrics, and overtime alerts. Implements CQRS with a dedicated read-side repository using SQL aggregations.
 
@@ -28,12 +30,7 @@ None (read-only aggregation). Consumes data from `activity_logs`, `staff`, and `
 
 ## API Endpoints
 
-| Method | Path | Description |
-|---|---|---|
-| GET | `/api/dashboard/stats?company_code=` | Aggregated JSON dashboard stats |
-| GET | `/dashboard?company_code=` | HTML dashboard page |
-| GET | `/staff` | HTML staff management page |
-| GET | `/actions` | HTML action type management page |
+API endpoints for this cell are documented in [docs/openapi.json](../../../../docs/openapi.json).
 
 ## Query Patterns
 

@@ -1,5 +1,7 @@
 # Shared Cell
 
+This guide covers the shared cell only. It provides cross-cutting utilities used by all other cells and contains no business logic. For project-wide conventions and task routing, read the root AGENTS.md.
+
 ## Purpose
 Shared utilities, error types, configuration, and middleware used by all other cells. This cell has no business logic and no dependencies on other cells.
 

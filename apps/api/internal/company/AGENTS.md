@@ -1,5 +1,7 @@
 # Company Cell
 
+This guide covers the company cell only. It defines companies, roles, and action type configuration. For project-wide conventions and task routing, read the root AGENTS.md.
+
 ## Purpose
 Manages tenant companies and their role catalog. Companies are the top-level organizational unit. This cell also manages action type configuration (WhatsApp keyword → action type mappings).
 
@@ -76,19 +78,7 @@ CREATE UNIQUE INDEX company_action_types_by_keyword
 
 ## API Endpoints
 
-| Method | Path | Description |
-|---|---|---|
-| GET | `/api/companies` | List all companies |
-| POST | `/api/companies` | Create company (seeds default action types) |
-| GET | `/api/companies/{code}` | Get company details with roles |
-| GET | `/api/companies/{code}/roles` | List roles |
-| POST | `/api/companies/{code}/roles` | Add role to company |
-| PUT | `/api/companies/{code}/roles/{role}` | Update role hourly rate |
-| DELETE | `/api/companies/{code}/roles/{role}` | Remove role from company |
-| GET | `/api/companies/{code}/action-types` | List action types |
-| POST | `/api/companies/{code}/action-types` | Create custom action type |
-| PUT | `/api/companies/{code}/action-types/{action}` | Update action type keyword |
-| DELETE | `/api/companies/{code}/action-types/{action}` | Delete custom action type |
+API endpoints for this cell are documented in [docs/openapi.json](../../../../docs/openapi.json).
 
 ## Cell-Specific Business Rules
 - `company_code` must be non-empty (used as tenant identifier)

@@ -1,5 +1,7 @@
 # Deployments
 
+This guide covers local deployment only. It contains Docker Compose, migrations, and environment setup; it does not define application behavior. For project-wide conventions and task routing, read the root AGENTS.md.
+
 This folder contains everything needed to run IMS locally with Docker Compose.
 
 ## Files
@@ -15,7 +17,7 @@ This folder contains everything needed to run IMS locally with Docker Compose.
 ```bash
 cd deployments
 cp .env.example .env
-make up
+make docker-up
 ```
 
 ## Environment Variables

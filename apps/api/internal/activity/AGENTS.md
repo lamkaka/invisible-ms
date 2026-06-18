@@ -1,5 +1,7 @@
 # Activity Cell
 
+This guide covers the activity cell only. It defines activity logs, webhook processing, and session computation. For project-wide conventions and task routing, read the root AGENTS.md.
+
 ## Purpose
 Records and tracks worker activity logs (check-in, check-out). Processes incoming WhatsApp webhook messages, parses them against company-configured keywords, and computes work sessions with duration and cost.
 
@@ -55,11 +57,7 @@ CREATE INDEX activity_logs_by_action ON activity_logs(company_code, action_type,
 
 ## API Endpoints
 
-| Method | Path | Description |
-|---|---|---|
-| POST | `/webhook/message` | Receive WhatsApp webhook (`X-Webhook-Secret` required) |
-| GET | `/api/activities?staff_id=&company_code=&from=&to=` | List activity logs |
-| GET | `/api/activities/sessions?company_code=&from=&to=` | List computed work sessions |
+API endpoints for this cell are documented in [docs/openapi.json](../../../../docs/openapi.json).
 
 ## Message Processing Flow
 

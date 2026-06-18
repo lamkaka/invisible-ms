@@ -1,5 +1,7 @@
 # Staff Cell
 
+This guide covers the staff cell only. It defines staff management and role assignment. For project-wide conventions and task routing, read the root AGENTS.md.
+
 ## Purpose
 Manages workers (staff members) within companies. Handles staff creation, role assignment, and identification via phone number.
 
@@ -61,13 +63,7 @@ CREATE TABLE staff_roles (
 
 ## API Endpoints
 
-| Method | Path | Description |
-|---|---|---|
-| GET | `/api/staff?company_code=` | List staff (company_code required) |
-| POST | `/api/staff` | Create staff with optional roles |
-| GET | `/api/staff/{id}` | Get staff details |
-| POST | `/api/staff/{id}/roles` | Assign role to staff |
-| DELETE | `/api/staff/{id}/roles/{role}` | Unassign role from staff |
+API endpoints for this cell are documented in [docs/openapi.json](../../../../docs/openapi.json).
 
 ## Cell-Specific Business Rules
 - Staff are identified by `phone_number + company_code` (unique constraint)

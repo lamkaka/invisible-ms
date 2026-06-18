@@ -1,0 +1,1061 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "IMS API",
+    "description": "Hourly Staff Management System API. Workers check in/out via WhatsApp; managers use this API and the dashboard to manage companies, staff, roles, and view activity.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080",
+      "description": "Local development server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Company",
+      "description": "Company, role catalog, and action type configuration"
+    },
+    {
+      "name": "Staff",
+      "description": "Staff management and role assignment"
+    },
+    {
+      "name": "Activity",
+      "description": "Webhook processing, activity logs, and computed sessions"
+    },
+    {
+      "name": "Dashboard",
+      "description": "Aggregated read-only dashboard data and HTML pages"
+    }
+  ],
+  "paths": {
+    "/api/companies": {
+      "get": {
+        "tags": ["Company"],
+        "summary": "List all companies",
+        "operationId": "listCompanies",
+        "responses": {
+          "200": {
+            "description": "List of companies",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Company"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Company"],
+        "summary": "Create a company",
+        "operationId": "createCompany",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompanyInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Company created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Company"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "409": {
+            "description": "Company already exists"
+          }
+        }
+      }
+    },
+    "/api/companies/{code}": {
+      "get": {
+        "tags": ["Company"],
+        "summary": "Get company details with roles",
+        "operationId": "getCompany",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Company details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Company"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Company not found"
+          }
+        }
+      }
+    },
+    "/api/companies/{code}/roles": {
+      "get": {
+        "tags": ["Company"],
+        "summary": "List roles for a company",
+        "operationId": "listCompanyRoles",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of roles",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Role"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Company"],
+        "summary": "Add a role to a company",
+        "operationId": "addCompanyRole",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoleInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Role added"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "404": {
+            "description": "Company not found"
+          },
+          "409": {
+            "description": "Role already exists"
+          }
+        }
+      }
+    },
+    "/api/companies/{code}/roles/{role}": {
+      "put": {
+        "tags": ["Company"],
+        "summary": "Update role hourly rate",
+        "operationId": "updateCompanyRole",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "hourly_rate": {
+                    "type": "number",
+                    "format": "double"
+                  }
+                },
+                "required": ["hourly_rate"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Role updated"
+          },
+          "404": {
+            "description": "Company or role not found"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Company"],
+        "summary": "Remove a role from a company",
+        "operationId": "deleteCompanyRole",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Role removed"
+          },
+          "404": {
+            "description": "Company or role not found"
+          }
+        }
+      }
+    },
+    "/api/companies/{code}/action-types": {
+      "get": {
+        "tags": ["Company"],
+        "summary": "List action types for a company",
+        "operationId": "listCompanyActionTypes",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of action types",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CompanyActionType"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Company"],
+        "summary": "Create a custom action type",
+        "operationId": "createCompanyActionType",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompanyActionTypeInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Action type created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "404": {
+            "description": "Company not found"
+          },
+          "409": {
+            "description": "Action type or keyword already exists"
+          }
+        }
+      }
+    },
+    "/api/companies/{code}/action-types/{action}": {
+      "put": {
+        "tags": ["Company"],
+        "summary": "Update action type keyword",
+        "operationId": "updateCompanyActionType",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "action",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "keyword": {
+                    "type": "string"
+                  }
+                },
+                "required": ["keyword"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Action type updated"
+          },
+          "404": {
+            "description": "Company or action type not found"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Company"],
+        "summary": "Delete a custom action type",
+        "operationId": "deleteCompanyActionType",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "action",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Action type deleted"
+          },
+          "404": {
+            "description": "Company or action type not found"
+          }
+        }
+      }
+    },
+    "/api/staff": {
+      "get": {
+        "tags": ["Staff"],
+        "summary": "List staff for a company",
+        "operationId": "listStaff",
+        "parameters": [
+          {
+            "name": "company_code",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of staff",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Staff"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing company_code"
+          }
+        }
+      },
+      "post": {
+        "tags": ["Staff"],
+        "summary": "Create a staff member",
+        "operationId": "createStaff",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StaffInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Staff created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Staff"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "404": {
+            "description": "Company or role not found"
+          },
+          "409": {
+            "description": "Staff already exists"
+          }
+        }
+      }
+    },
+    "/api/staff/{id}": {
+      "get": {
+        "tags": ["Staff"],
+        "summary": "Get staff details",
+        "operationId": "getStaff",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Staff details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Staff"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Staff not found"
+          }
+        }
+      }
+    },
+    "/api/staff/{id}/roles": {
+      "post": {
+        "tags": ["Staff"],
+        "summary": "Assign a role to a staff member",
+        "operationId": "assignStaffRole",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "role_name": {
+                    "type": "string"
+                  }
+                },
+                "required": ["role_name"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Role assigned"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "404": {
+            "description": "Staff or role not found"
+          }
+        }
+      }
+    },
+    "/api/staff/{id}/roles/{role}": {
+      "delete": {
+        "tags": ["Staff"],
+        "summary": "Unassign a role from a staff member",
+        "operationId": "unassignStaffRole",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Role unassigned"
+          },
+          "404": {
+            "description": "Staff or role not found"
+          }
+        }
+      }
+    },
+    "/webhook/message": {
+      "post": {
+        "tags": ["Activity"],
+        "summary": "Receive a WhatsApp webhook message",
+        "operationId": "receiveWebhookMessage",
+        "parameters": [
+          {
+            "name": "X-Webhook-Secret",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookMessage"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Message processed"
+          },
+          "400": {
+            "description": "Invalid message"
+          },
+          "401": {
+            "description": "Missing or invalid webhook secret"
+          }
+        }
+      }
+    },
+    "/api/activities": {
+      "get": {
+        "tags": ["Activity"],
+        "summary": "List activity logs",
+        "operationId": "listActivities",
+        "parameters": [
+          {
+            "name": "staff_id",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "company_code",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of activity logs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ActivityLog"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/activities/sessions": {
+      "get": {
+        "tags": ["Activity"],
+        "summary": "List computed work sessions",
+        "operationId": "listSessions",
+        "parameters": [
+          {
+            "name": "company_code",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of computed sessions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Session"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/dashboard/stats": {
+      "get": {
+        "tags": ["Dashboard"],
+        "summary": "Get aggregated dashboard stats",
+        "operationId": "getDashboardStats",
+        "parameters": [
+          {
+            "name": "company_code",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Dashboard statistics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardStats"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing company_code"
+          }
+        }
+      }
+    },
+    "/dashboard": {
+      "get": {
+        "tags": ["Dashboard"],
+        "summary": "HTML dashboard page",
+        "operationId": "getDashboardPage",
+        "parameters": [
+          {
+            "name": "company_code",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "HTML dashboard page",
+            "content": {
+              "text/html": {}
+            }
+          },
+          "400": {
+            "description": "Missing company_code"
+          }
+        }
+      }
+    },
+    "/staff": {
+      "get": {
+        "tags": ["Dashboard"],
+        "summary": "HTML staff management page",
+        "operationId": "getStaffPage",
+        "responses": {
+          "200": {
+            "description": "HTML staff management page",
+            "content": {
+              "text/html": {}
+            }
+          }
+        }
+      }
+    },
+    "/actions": {
+      "get": {
+        "tags": ["Dashboard"],
+        "summary": "HTML action type management page",
+        "operationId": "getActionsPage",
+        "responses": {
+          "200": {
+            "description": "HTML action type management page",
+            "content": {
+              "text/html": {}
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Company": {
+        "type": "object",
+        "properties": {
+          "company_code": {
+            "type": "string"
+          },
+          "company_name": {
+            "type": "string"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Role"
+            }
+          }
+        },
+        "required": ["company_code", "company_name"]
+      },
+      "CompanyInput": {
+        "type": "object",
+        "properties": {
+          "company_code": {
+            "type": "string"
+          },
+          "company_name": {
+            "type": "string"
+          }
+        },
+        "required": ["company_code", "company_name"]
+      },
+      "Role": {
+        "type": "object",
+        "properties": {
+          "role_name": {
+            "type": "string"
+          },
+          "hourly_rate": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "required": ["role_name", "hourly_rate"]
+      },
+      "RoleInput": {
+        "type": "object",
+        "properties": {
+          "role_name": {
+            "type": "string"
+          },
+          "hourly_rate": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "required": ["role_name", "hourly_rate"]
+      },
+      "CompanyActionType": {
+        "type": "object",
+        "properties": {
+          "action_type": {
+            "type": "string"
+          },
+          "keyword": {
+            "type": "string"
+          },
+          "is_system": {
+            "type": "boolean"
+          }
+        },
+        "required": ["action_type", "keyword", "is_system"]
+      },
+      "CompanyActionTypeInput": {
+        "type": "object",
+        "properties": {
+          "action_type": {
+            "type": "string"
+          },
+          "keyword": {
+            "type": "string"
+          }
+        },
+        "required": ["action_type", "keyword"]
+      },
+      "Staff": {
+        "type": "object",
+        "properties": {
+          "staff_id": {
+            "type": "string"
+          },
+          "phone_number": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "company_code": {
+            "type": "string"
+          },
+          "assigned_roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "is_active": {
+            "type": "boolean"
+          }
+        },
+        "required": ["staff_id", "phone_number", "name", "company_code", "is_active"]
+      },
+      "StaffInput": {
+        "type": "object",
+        "properties": {
+          "phone_number": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "company_code": {
+            "type": "string"
+          },
+          "assigned_roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": ["phone_number", "name", "company_code"]
+      },
+      "WebhookMessage": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "company_code": {
+            "type": "string"
+          }
+        },
+        "required": ["phone", "message", "company_code"]
+      },
+      "ActivityLog": {
+        "type": "object",
+        "properties": {
+          "log_id": {
+            "type": "string"
+          },
+          "staff_id": {
+            "type": "string"
+          },
+          "company_code": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "action_type": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "metadata": {
+            "type": "object"
+          }
+        },
+        "required": ["log_id", "staff_id", "company_code", "role", "action_type", "timestamp"]
+      },
+      "Session": {
+        "type": "object",
+        "properties": {
+          "staff_id": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "check_in": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "check_out": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "duration_hours": {
+            "type": "number",
+            "format": "double"
+          },
+          "cost": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "required": ["staff_id", "role", "check_in"]
+      },
+      "DashboardStats": {
+        "type": "object",
+        "properties": {
+          "company_code": {
+            "type": "string"
+          },
+          "total_staff": {
+            "type": "integer"
+          },
+          "active_staff": {
+            "type": "integer"
+          },
+          "today_hours": {
+            "type": "number",
+            "format": "double"
+          },
+          "today_cost": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      }
+    }
+  }
+}
