@@ -117,6 +117,9 @@ func (m *MockCompanyRepo) GetByCode(ctx context.Context, code string) (*company.
 func (m *MockCompanyRepo) List(ctx context.Context) ([]*company.Company, error) { return nil, nil }
 func (m *MockCompanyRepo) Update(ctx context.Context, c *company.Company) error { return nil }
 func (m *MockCompanyRepo) Delete(ctx context.Context, code string) error        { return nil }
+func (m *MockCompanyRepo) IsRoleAssigned(ctx context.Context, companyCode, roleName string) (bool, error) {
+	return false, nil
+}
 
 type MockActionTypeRepository struct {
 	actionTypes []company.CompanyActionType

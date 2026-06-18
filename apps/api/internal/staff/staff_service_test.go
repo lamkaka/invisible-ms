@@ -96,6 +96,14 @@ func (m *MockCompanyRepository) Delete(ctx context.Context, code string) error {
 	return nil
 }
 
+func (m *MockCompanyRepository) IsRoleAssigned(ctx context.Context, companyCode, roleName string) (bool, error) {
+	c, exists := m.companies[companyCode]
+	if !exists {
+		return false, nil
+	}
+	return c.HasRole(roleName), nil
+}
+
 type MockActionTypeRepository struct{}
 
 func NewMockActionTypeRepository() *MockActionTypeRepository { return &MockActionTypeRepository{} }

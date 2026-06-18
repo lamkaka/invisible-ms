@@ -10,7 +10,8 @@ var (
 	ErrInvalidCompanyName = errors.New("company name cannot be empty")
 	ErrRoleAlreadyExists  = errors.New("role already exists")
 	ErrRoleNotFound       = errors.New("role not found")
-	ErrInvalidRoleName    = errors.New("role name cannot be empty")
+	ErrRoleAssigned       = errors.New("role is assigned to staff")
+	ErrInvalidRoleName    = errors.New("role name must be uppercase alphanumeric with underscores only")
 	ErrInvalidHourlyRate  = errors.New("hourly rate cannot be negative")
 )
 
@@ -19,9 +20,21 @@ type Role struct {
 	HourlyRate float64 `json:"hourly_rate"`
 }
 
-func NewRole(name string, hourlyRate float64) (*Role, error) {
+func ValidateRoleName(name string) error {
 	if name == "" {
-		return nil, ErrInvalidRoleName
+		return ErrInvalidRoleName
+	}
+	for _, c := range name {
+		if !((c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_') {
+			return ErrInvalidRoleName
+		}
+	}
+	return nil
+}
+
+func NewRole(name string, hourlyRate float64) (*Role, error) {
+	if err := ValidateRoleName(name); err != nil {
+		return nil, err
 	}
 	if hourlyRate < 0 {
 		return nil, ErrInvalidHourlyRate
@@ -83,6 +96,23 @@ func (c *Company) GetRole(name string) (*Role, error) {
 func (c *Company) HasRole(name string) bool {
 	_, exists := c.Roles[name]
 	return exists
+}
+
+func (c *Company) UpdateRole(name string, hourlyRate float64) error {
+	if err := ValidateRoleName(name); err != nil {
+		return err
+	}
+	if hourlyRate < 0 {
+		return ErrInvalidHourlyRate
+	}
+
+	role, exists := c.Roles[name]
+	if !exists {
+		return fmt.Errorf("%w: %s", ErrRoleNotFound, name)
+	}
+
+	role.HourlyRate = hourlyRate
+	return nil
 }
 
 // --- Action Type Configuration ---

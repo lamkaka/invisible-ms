@@ -143,6 +143,14 @@ func (m *controllerMockCompanyRepo) Delete(ctx context.Context, code string) err
 	return nil
 }
 
+func (m *controllerMockCompanyRepo) IsRoleAssigned(ctx context.Context, companyCode, roleName string) (bool, error) {
+	c, exists := m.companies[companyCode]
+	if !exists {
+		return false, nil
+	}
+	return c.HasRole(roleName), nil
+}
+
 type controllerMockActionTypeRepo struct {
 	actionTypes []company.CompanyActionType
 }

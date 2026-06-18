@@ -39,6 +39,19 @@ func (s *CompanyService) ListCompanies(ctx context.Context) ([]*Company, error) 
 	return s.repo.List(ctx)
 }
 
+func (s *CompanyService) ListRoles(ctx context.Context, companyCode string) ([]Role, error) {
+	company, err := s.repo.GetByCode(ctx, companyCode)
+	if err != nil {
+		return nil, err
+	}
+
+	roles := make([]Role, 0, len(company.Roles))
+	for _, role := range company.Roles {
+		roles = append(roles, *role)
+	}
+	return roles, nil
+}
+
 func (s *CompanyService) AddRole(ctx context.Context, companyCode, roleName string, hourlyRate float64) error {
 	company, err := s.repo.GetByCode(ctx, companyCode)
 	if err != nil {
@@ -53,10 +66,32 @@ func (s *CompanyService) AddRole(ctx context.Context, companyCode, roleName stri
 	return s.repo.Update(ctx, company)
 }
 
+func (s *CompanyService) UpdateRole(ctx context.Context, companyCode, roleName string, hourlyRate float64) error {
+	company, err := s.repo.GetByCode(ctx, companyCode)
+	if err != nil {
+		return err
+	}
+
+	err = company.UpdateRole(roleName, hourlyRate)
+	if err != nil {
+		return err
+	}
+
+	return s.repo.Update(ctx, company)
+}
+
 func (s *CompanyService) RemoveRole(ctx context.Context, companyCode, roleName string) error {
 	company, err := s.repo.GetByCode(ctx, companyCode)
 	if err != nil {
 		return err
+	}
+
+	assigned, err := s.repo.IsRoleAssigned(ctx, companyCode, roleName)
+	if err != nil {
+		return err
+	}
+	if assigned {
+		return fmt.Errorf("%w: %s", ErrRoleAssigned, roleName)
 	}
 
 	err = company.RemoveRole(roleName)

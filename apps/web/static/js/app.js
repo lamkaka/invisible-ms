@@ -349,4 +349,146 @@ document.addEventListener('alpine:init', () => {
             this.formError = null;
         }
     }));
+
+    // ============================================
+    // Roles Component
+    // ============================================
+    Alpine.data('roles', () => ({
+        roles: [],
+        loading: false,
+        error: null,
+        showCreateModal: false,
+        showEditModal: false,
+        showDeleteModal: false,
+        saving: false,
+        formError: null,
+        companyCode: 'ACME',
+        form: {
+            name: '',
+            hourly_rate: ''
+        },
+
+        async init() {
+            this.companyCode = this.$el.dataset.companyCode || 'ACME';
+            await this.fetchRoles();
+        },
+
+        async fetchRoles() {
+            this.loading = true;
+            this.error = null;
+
+            try {
+                const response = await fetch(`/api/companies/${this.companyCode}/roles`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                this.roles = await response.json();
+            } catch (err) {
+                this.error = err.message;
+                console.error('Failed to fetch roles:', err);
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        editRole(role) {
+            this.form = {
+                name: role.name,
+                hourly_rate: role.hourly_rate
+            };
+            this.showEditModal = true;
+        },
+
+        deleteRole(role) {
+            this.form = {
+                name: role.name,
+                hourly_rate: role.hourly_rate
+            };
+            this.showDeleteModal = true;
+        },
+
+        async saveRole() {
+            this.saving = true;
+            this.formError = null;
+
+            try {
+                const isEdit = this.showEditModal;
+                const url = isEdit
+                    ? `/api/companies/${this.companyCode}/roles/${this.form.name}`
+                    : `/api/companies/${this.companyCode}/roles`;
+
+                const method = isEdit ? 'PUT' : 'POST';
+                const body = isEdit
+                    ? JSON.stringify({ hourly_rate: parseFloat(this.form.hourly_rate) })
+                    : JSON.stringify({
+                        role_name: this.form.name,
+                        hourly_rate: parseFloat(this.form.hourly_rate)
+                    });
+
+                const response = await fetch(url, {
+                    method,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(errorText || `HTTP error! status: ${response.status}`);
+                }
+
+                this.closeModal();
+                await this.fetchRoles();
+            } catch (err) {
+                this.formError = err.message;
+                console.error('Failed to save role:', err);
+            } finally {
+                this.saving = false;
+            }
+        },
+
+        async confirmDelete() {
+            this.saving = true;
+            this.formError = null;
+
+            try {
+                const response = await fetch(`/api/companies/${this.companyCode}/roles/${this.form.name}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(errorText || `HTTP error! status: ${response.status}`);
+                }
+
+                this.closeModal();
+                await this.fetchRoles();
+            } catch (err) {
+                this.formError = err.message;
+                console.error('Failed to delete role:', err);
+            } finally {
+                this.saving = false;
+            }
+        },
+
+        closeModal() {
+            this.showCreateModal = false;
+            this.showEditModal = false;
+            this.showDeleteModal = false;
+            this.form = {
+                name: '',
+                hourly_rate: ''
+            };
+            this.formError = null;
+        },
+
+        formatCurrency(amount) {
+            if (!amount && amount !== 0) return '$0.00';
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD'
+            }).format(parseFloat(amount));
+        }
+    }));
 });

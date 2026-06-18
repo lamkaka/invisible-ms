@@ -81,7 +81,9 @@ CREATE UNIQUE INDEX company_action_types_by_keyword
 | GET | `/api/companies` | List all companies |
 | POST | `/api/companies` | Create company (seeds default action types) |
 | GET | `/api/companies/{code}` | Get company details with roles |
+| GET | `/api/companies/{code}/roles` | List roles |
 | POST | `/api/companies/{code}/roles` | Add role to company |
+| PUT | `/api/companies/{code}/roles/{role}` | Update role hourly rate |
 | DELETE | `/api/companies/{code}/roles/{role}` | Remove role from company |
 | GET | `/api/companies/{code}/action-types` | List action types |
 | POST | `/api/companies/{code}/action-types` | Create custom action type |
@@ -96,6 +98,7 @@ CREATE UNIQUE INDEX company_action_types_by_keyword
 - Keywords must be unique within a company
 - New companies automatically get default system action types seeded
 - Roles are stored as `company_roles` child rows (interleaved in `companies`)
+- A role cannot be deleted while it is assigned to staff
 
 ## Links
 - Architecture conventions: [docs/rules/01-architecture.md](../../../../docs/rules/01-architecture.md)

@@ -15,6 +15,7 @@ type DashboardWebController struct {
 	dashboardTmpl *template.Template
 	staffTmpl     *template.Template
 	actionsTmpl   *template.Template
+	rolesTmpl     *template.Template
 }
 
 func NewDashboardWebController(service *DashboardService, templateDir string) (*DashboardWebController, error) {
@@ -42,12 +43,21 @@ func NewDashboardWebController(service *DashboardService, templateDir string) (*
 		return nil, fmt.Errorf("failed to parse actions templates: %w", err)
 	}
 
+	rolesTmpl, err := template.ParseFiles(
+		filepath.Join(templateDir, "layout.html"),
+		filepath.Join(templateDir, "roles.html"),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse roles templates: %w", err)
+	}
+
 	return &DashboardWebController{
 		service:       service,
 		templateDir:   templateDir,
 		dashboardTmpl: dashboardTmpl,
 		staffTmpl:     staffTmpl,
 		actionsTmpl:   actionsTmpl,
+		rolesTmpl:     rolesTmpl,
 	}, nil
 }
 
@@ -55,6 +65,7 @@ func (h *DashboardWebController) RegisterRoutes(r chi.Router) {
 	r.Get("/dashboard", h.DashboardPage)
 	r.Get("/staff", h.StaffPage)
 	r.Get("/actions", h.ActionsPage)
+	r.Get("/roles", h.RolesPage)
 }
 
 func (h *DashboardWebController) DashboardPage(w http.ResponseWriter, r *http.Request) {
@@ -87,6 +98,13 @@ func (h *DashboardWebController) StaffPage(w http.ResponseWriter, r *http.Reques
 
 func (h *DashboardWebController) ActionsPage(w http.ResponseWriter, r *http.Request) {
 	if err := h.actionsTmpl.ExecuteTemplate(w, "actions.html", nil); err != nil {
+		http.Error(w, "Template error: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+func (h *DashboardWebController) RolesPage(w http.ResponseWriter, r *http.Request) {
+	if err := h.rolesTmpl.ExecuteTemplate(w, "roles.html", nil); err != nil {
 		http.Error(w, "Template error: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
