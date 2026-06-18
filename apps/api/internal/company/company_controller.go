@@ -25,7 +25,9 @@ func (h *CompanyController) RegisterRoutes(r chi.Router) {
 		r.Route("/{code}", func(r chi.Router) {
 			r.Get("/", h.GetCompany)
 			r.Route("/roles", func(r chi.Router) {
+				r.Get("/", h.ListRoles)
 				r.Post("/", h.AddRole)
+				r.Put("/{role}", h.UpdateRole)
 				r.Delete("/{role}", h.RemoveRole)
 			})
 			r.Route("/action-types", func(r chi.Router) {
@@ -92,6 +94,23 @@ func (h *CompanyController) GetCompany(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(company)
 }
 
+func (h *CompanyController) ListRoles(w http.ResponseWriter, r *http.Request) {
+	code := chi.URLParam(r, "code")
+
+	roles, err := h.service.ListRoles(r.Context(), code)
+	if err != nil {
+		if shared.IsNotFound(err) {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(roles)
+}
+
 func (h *CompanyController) AddRole(w http.ResponseWriter, r *http.Request) {
 	code := chi.URLParam(r, "code")
 
@@ -122,6 +141,36 @@ func (h *CompanyController) AddRole(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
+func (h *CompanyController) UpdateRole(w http.ResponseWriter, r *http.Request) {
+	code := chi.URLParam(r, "code")
+	role := chi.URLParam(r, "role")
+
+	var req struct {
+		HourlyRate float64 `json:"hourly_rate"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	err := h.service.UpdateRole(r.Context(), code, role, req.HourlyRate)
+	if err != nil {
+		if shared.IsNotFound(err) || errors.Is(err, ErrRoleNotFound) {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
+		if errors.Is(err, ErrInvalidRoleName) || errors.Is(err, ErrInvalidHourlyRate) {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func (h *CompanyController) RemoveRole(w http.ResponseWriter, r *http.Request) {
 	code := chi.URLParam(r, "code")
 	role := chi.URLParam(r, "role")
@@ -130,6 +179,10 @@ func (h *CompanyController) RemoveRole(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if shared.IsNotFound(err) || errors.Is(err, ErrRoleNotFound) {
 			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
+		if errors.Is(err, ErrRoleAssigned) {
+			http.Error(w, err.Error(), http.StatusConflict)
 			return
 		}
 		http.Error(w, err.Error(), http.StatusBadRequest)
