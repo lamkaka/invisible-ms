@@ -36,7 +36,7 @@ The changes stay inside the `company` and `dashboard` cells.
 
 | File | Change |
 |------|--------|
-| `company_domain.go` | Add `UpdateRole(name, hourlyRate)`; validate role name format. |
+| `company_domain.go` | Add `UpdateRole(name, hourlyRate)` and `ErrRoleAssigned`; validate role name format. |
 | `company_service.go` | Add `ListRoles()` and `UpdateRole()`; guard `RemoveRole()` with staff-assignment check. |
 | `company_repository.go` | Add `IsRoleAssigned(ctx, companyCode, roleName) bool`. |
 | `company_controller.go` | Add handlers for `GET /api/companies/{code}/roles` and `PUT /api/companies/{code}/roles/{role}`. |
@@ -45,9 +45,9 @@ The changes stay inside the `company` and `dashboard` cells.
 
 | File | Change |
 |------|--------|
-| `dashboard_web_controller.go` | Add `GET /roles?company_code=` handler. |
-| `templates/roles.html` | New server-rendered page with Alpine.js for interactions. |
-| `templates/*` | Add a "Roles" link to existing navigation. |
+| `dashboard_web_controller.go` | Add `GET /roles?company_code=` handler that renders `roles.html`. |
+| `apps/web/templates/roles.html` | New template shell; Alpine.js fetches roles and calls the company endpoints. |
+| `apps/web/templates/layout.html` | Add a "Roles" link to the navbar. |
 
 ## API Design
 
@@ -102,14 +102,15 @@ Request body:
 
 ## Web UI
 
-The `/roles` page mirrors the existing dashboard pages:
+The `/roles` page follows the same pattern as `/staff` and `/actions`:
 
+- The server renders a template shell with Alpine.js.
+- Alpine.js fetches roles from `GET /api/companies/{code}/roles` and calls `POST`, `PUT`, and `DELETE` endpoints.
 - Table of roles with inline edit and delete actions.
-- Side form to add a new role.
-- Alpine.js handles form submission and inline updates without page reloads.
+- Modal form to add a new role.
 - Errors surface inline near the relevant action.
 
-Navigation across dashboard pages gains a "Roles" link.
+The navbar in `layout.html` gains a "Roles" link.
 
 ## Business Rules
 
@@ -118,6 +119,7 @@ Navigation across dashboard pages gains a "Roles" link.
 - Role names must be unique within a company.
 - A role cannot be deleted while it is assigned to one or more staff members.
 - Updating a role's hourly rate changes only the stored rate; past sessions keep their original cost.
+- These rules apply to both the existing `AddRole` and the new `UpdateRole` paths.
 
 ## Error Handling
 
