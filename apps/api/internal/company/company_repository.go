@@ -18,6 +18,7 @@ type CompanyRepository interface {
 	List(ctx context.Context) ([]*Company, error)
 	Update(ctx context.Context, company *Company) error
 	Delete(ctx context.Context, code string) error
+	IsRoleAssigned(ctx context.Context, companyCode, roleName string) (bool, error)
 }
 
 type SpannerCompanyRepository struct {
@@ -246,4 +247,23 @@ func (r *SpannerCompanyRepository) Delete(ctx context.Context, code string) erro
 		return fmt.Errorf("failed to delete company: %w", err)
 	}
 	return nil
+}
+
+func (r *SpannerCompanyRepository) IsRoleAssigned(ctx context.Context, companyCode, roleName string) (bool, error) {
+	stmt := spanner.Statement{
+		SQL:    "SELECT staff_id FROM staff_roles WHERE company_code = @company AND role_name = @role LIMIT 1",
+		Params: map[string]interface{}{"company": companyCode, "role": roleName},
+	}
+
+	iter := r.client.Single().Query(ctx, stmt)
+	defer iter.Stop()
+
+	_, err := iter.Next()
+	if err == iterator.Done {
+		return false, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("failed to check role assignment: %w", err)
+	}
+	return true, nil
 }
