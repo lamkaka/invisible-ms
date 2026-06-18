@@ -8,11 +8,15 @@ import (
 )
 
 type MockCompanyRepository struct {
-	companies map[string]*Company
+	companies     map[string]*Company
+	assignedRoles map[string]bool // key: "companyCode|roleName"
 }
 
 func NewMockCompanyRepository() *MockCompanyRepository {
-	return &MockCompanyRepository{companies: make(map[string]*Company)}
+	return &MockCompanyRepository{
+		companies:     make(map[string]*Company),
+		assignedRoles: make(map[string]bool),
+	}
 }
 
 func (m *MockCompanyRepository) Create(ctx context.Context, company *Company) error {
@@ -44,6 +48,10 @@ func (m *MockCompanyRepository) Update(ctx context.Context, company *Company) er
 func (m *MockCompanyRepository) Delete(ctx context.Context, code string) error {
 	delete(m.companies, code)
 	return nil
+}
+
+func (m *MockCompanyRepository) IsRoleAssigned(ctx context.Context, companyCode, roleName string) (bool, error) {
+	return m.assignedRoles[companyCode+"|"+roleName], nil
 }
 
 type MockActionTypeRepository struct {
@@ -318,6 +326,80 @@ func TestCompanyService_DeleteActionType(t *testing.T) {
 	_, err = service.actionTypes.Get(ctx, "ACME", "BREAK_START")
 	if !errors.Is(err, ErrActionTypeNotFound) {
 		t.Errorf("expected ErrActionTypeNotFound, got %v", err)
+	}
+}
+
+func TestCompanyService_ListRoles(t *testing.T) {
+	repo := NewMockCompanyRepository()
+	atRepo := NewMockActionTypeRepository()
+	service := NewCompanyService(repo, atRepo)
+	ctx := context.Background()
+
+	_, err := service.CreateCompany(ctx, "ACME", "Acme Corp")
+	if err != nil {
+		t.Fatalf("failed to create company: %v", err)
+	}
+
+	if err := service.AddRole(ctx, "ACME", "CLEANING", 15.0); err != nil {
+		t.Fatalf("failed to add role: %v", err)
+	}
+
+	roles, err := service.ListRoles(ctx, "ACME")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(roles) != 1 {
+		t.Errorf("expected 1 role, got %d", len(roles))
+	}
+	if roles[0].Name != "CLEANING" {
+		t.Errorf("expected CLEANING, got %s", roles[0].Name)
+	}
+}
+
+func TestCompanyService_UpdateRole(t *testing.T) {
+	repo := NewMockCompanyRepository()
+	atRepo := NewMockActionTypeRepository()
+	service := NewCompanyService(repo, atRepo)
+	ctx := context.Background()
+
+	_, err := service.CreateCompany(ctx, "ACME", "Acme Corp")
+	if err != nil {
+		t.Fatalf("failed to create company: %v", err)
+	}
+	if err := service.AddRole(ctx, "ACME", "CLEANING", 15.0); err != nil {
+		t.Fatalf("failed to add role: %v", err)
+	}
+
+	if err := service.UpdateRole(ctx, "ACME", "CLEANING", 20.0); err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+
+	company, _ := service.GetCompany(ctx, "ACME")
+	role, _ := company.GetRole("CLEANING")
+	if role.HourlyRate != 20.0 {
+		t.Errorf("expected rate 20.0, got %f", role.HourlyRate)
+	}
+}
+
+func TestCompanyService_RemoveRole_BlockedWhenAssigned(t *testing.T) {
+	repo := NewMockCompanyRepository()
+	atRepo := NewMockActionTypeRepository()
+	service := NewCompanyService(repo, atRepo)
+	ctx := context.Background()
+
+	_, err := service.CreateCompany(ctx, "ACME", "Acme Corp")
+	if err != nil {
+		t.Fatalf("failed to create company: %v", err)
+	}
+	if err := service.AddRole(ctx, "ACME", "CLEANING", 15.0); err != nil {
+		t.Fatalf("failed to add role: %v", err)
+	}
+
+	repo.assignedRoles["ACME|CLEANING"] = true
+
+	err = service.RemoveRole(ctx, "ACME", "CLEANING")
+	if !errors.Is(err, ErrRoleAssigned) {
+		t.Errorf("expected ErrRoleAssigned, got %v", err)
 	}
 }
 
