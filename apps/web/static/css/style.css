@@ -687,6 +687,13 @@ body {
     margin-bottom: 24px;
 }
 
+/* ============================================
+   Roles Page
+   ============================================ */
+.roles-page .page-header {
+    margin-bottom: 24px;
+}
+
 .action-type-name {
     font-weight: 500;
     color: var(--text-primary);
@@ -795,7 +802,8 @@ body {
 }
 
 .form-group input[type="text"],
-.form-group input[type="tel"] {
+.form-group input[type="tel"],
+.form-group input[type="number"] {
     width: 100%;
     padding: 10px 14px;
     border: 1px solid var(--border);
