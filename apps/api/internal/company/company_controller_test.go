@@ -18,7 +18,7 @@ import (
 type controllerTestMocks struct {
 	companyRepo *controllerMockCompanyRepo
 	atRepo      *controllerMockActionTypeRepo
-	controller     *CompanyController
+	controller  *CompanyController
 	router      *chi.Mux
 }
 
@@ -35,7 +35,7 @@ func newControllerTestMocks() *controllerTestMocks {
 	return &controllerTestMocks{
 		companyRepo: companyRepo,
 		atRepo:      atRepo,
-		controller:     controller,
+		controller:  controller,
 		router:      router,
 	}
 }
@@ -537,6 +537,52 @@ func TestCompanyController_UpdateRole_InvalidRate(t *testing.T) {
 
 	if rec.Code != http.StatusBadRequest {
 		t.Errorf("expected 400, got %d: %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestCompanyController_UpdateRole_InvalidJSON(t *testing.T) {
+	m := newControllerTestMocks()
+
+	_, err := m.controller.service.CreateCompany(context.Background(), "ACME", "Acme Corp")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := m.controller.service.AddRole(context.Background(), "ACME", "CLEANING", 15.0); err != nil {
+		t.Fatal(err)
+	}
+
+	req := httptest.NewRequest("PUT", "/api/companies/ACME/roles/CLEANING", bytes.NewBufferString("not-json"))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	m.router.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("expected 400, got %d: %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestCompanyController_ListRoles_Empty(t *testing.T) {
+	m := newControllerTestMocks()
+
+	_, err := m.controller.service.CreateCompany(context.Background(), "ACME", "Acme Corp")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	req := httptest.NewRequest("GET", "/api/companies/ACME/roles", nil)
+	rec := httptest.NewRecorder()
+	m.router.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Errorf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+
+	var roles []Role
+	if err := json.NewDecoder(rec.Body).Decode(&roles); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+	if len(roles) != 0 {
+		t.Errorf("expected 0 roles, got %d", len(roles))
 	}
 }
 
