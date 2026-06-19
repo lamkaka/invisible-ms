@@ -84,7 +84,7 @@ func (r *SpannerDashboardRepository) GetCurrentlyWorking(ctx context.Context, co
 }
 
 func (r *SpannerDashboardRepository) GetCheckedInToday(ctx context.Context, companyCode string) (int, error) {
-	today := time.Now().Truncate(24 * time.Hour)
+	today := time.Now().UTC().Truncate(24 * time.Hour)
 
 	stmt := spanner.Statement{
 		SQL: `SELECT COUNT(*) FROM activity_logs 
@@ -114,16 +114,16 @@ func (r *SpannerDashboardRepository) GetCheckedInToday(ctx context.Context, comp
 }
 
 func (r *SpannerDashboardRepository) GetTotalHoursToday(ctx context.Context, companyCode string) (float64, error) {
-	today := time.Now().Truncate(24 * time.Hour)
-	now := time.Now()
+	today := time.Now().UTC().Truncate(24 * time.Hour)
+	now := time.Now().UTC()
 
 	stmt := spanner.Statement{
 		SQL: `SELECT COALESCE(SUM(
-		          TIMESTAMP_DIFF(
+		  TIMESTAMP_DIFF(
 		            LEAST(COALESCE(checkout_ts, @now), @now),
 		            GREATEST(checkin_ts, @today),
-		            SECOND
-		          ) / 3600.0
+		            MICROSECOND
+		          ) / 3600000000.0
 		        ), 0)
 		      FROM (
 		        SELECT 
@@ -140,7 +140,7 @@ func (r *SpannerDashboardRepository) GetTotalHoursToday(ctx context.Context, com
 		        WHERE checkin.company_code = @company
 		          AND checkin.action_type = 'CHECK_IN'
 		          AND checkin.timestamp < @now
-		          AND checkin.timestamp >= @today - INTERVAL 7 DAY
+		          AND checkin.timestamp >= TIMESTAMP_SUB(@today, INTERVAL 7 DAY)
 		      ) paired
 		      WHERE LEAST(COALESCE(checkout_ts, @now), @now) > GREATEST(checkin_ts, @today)`,
 		Params: map[string]interface{}{
@@ -169,7 +169,7 @@ func (r *SpannerDashboardRepository) GetTotalHoursToday(ctx context.Context, com
 func (r *SpannerDashboardRepository) GetCostForPeriod(ctx context.Context, companyCode string, from, to time.Time) (float64, error) {
 	stmt := spanner.Statement{
 		SQL: `SELECT COALESCE(SUM(
-		          TIMESTAMP_DIFF(checkout_ts, checkin_ts, SECOND) / 3600.0 * COALESCE(cr.hourly_rate, 0)
+		          TIMESTAMP_DIFF(checkout_ts, checkin_ts, MICROSECOND) / 3600000000.0 * COALESCE(cr.hourly_rate, 0)
 		        ), 0)
 		      FROM (
 		        SELECT 
@@ -220,7 +220,7 @@ func (r *SpannerDashboardRepository) GetCostByRole(ctx context.Context, companyC
 	stmt := spanner.Statement{
 		SQL: `SELECT paired.role,
 		             COALESCE(SUM(
-		               TIMESTAMP_DIFF(checkout_ts, checkin_ts, SECOND) / 3600.0 * COALESCE(cr.hourly_rate, 0)
+		               TIMESTAMP_DIFF(checkout_ts, checkin_ts, MICROSECOND) / 3600000000.0 * COALESCE(cr.hourly_rate, 0)
 		             ), 0) as total_cost
 		      FROM (
 		        SELECT 
@@ -284,8 +284,8 @@ func (r *SpannerDashboardRepository) GetStaffStats(ctx context.Context, companyC
 		      FROM (
 		        SELECT 
 		          paired.staff_id,
-		          TIMESTAMP_DIFF(checkout_ts, checkin_ts, SECOND) / 3600.0 as total_hours,
-		          TIMESTAMP_DIFF(checkout_ts, checkin_ts, SECOND) / 3600.0 * COALESCE(cr.hourly_rate, 0) as total_cost
+		          TIMESTAMP_DIFF(checkout_ts, checkin_ts, MICROSECOND) / 3600000000.0 as total_hours,
+		          TIMESTAMP_DIFF(checkout_ts, checkin_ts, MICROSECOND) / 3600000000.0 * COALESCE(cr.hourly_rate, 0) as total_cost
 		        FROM (
 		          SELECT 
 		            checkin.staff_id,
@@ -348,7 +348,7 @@ func (r *SpannerDashboardRepository) GetAverageHours(ctx context.Context, compan
 		      FROM (
 		        SELECT 
 		          paired.staff_id,
-		          COALESCE(SUM(TIMESTAMP_DIFF(checkout_ts, checkin_ts, SECOND) / 3600.0), 0) as total_hours
+		          COALESCE(SUM(TIMESTAMP_DIFF(checkout_ts, checkin_ts, MICROSECOND) / 3600000000.0), 0) as total_hours
 		        FROM (
 		          SELECT 
 		            checkin.staff_id,
@@ -400,7 +400,7 @@ func (r *SpannerDashboardRepository) GetOvertimeAlerts(ctx context.Context, comp
 		      FROM (
 		        SELECT 
 		          paired.staff_id,
-		          TIMESTAMP_DIFF(checkout_ts, checkin_ts, SECOND) / 3600.0 as total_hours
+		          TIMESTAMP_DIFF(checkout_ts, checkin_ts, MICROSECOND) / 3600000000.0 as total_hours
 		        FROM (
 		          SELECT 
 		            checkin.staff_id,

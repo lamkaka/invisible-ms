@@ -17,10 +17,10 @@ func NewDashboardService(repo DashboardRepository) *DashboardService {
 const DefaultOvertimeThresholdHours = 8.0
 
 func (s *DashboardService) GetStats(ctx context.Context, companyCode string) (*DashboardStats, error) {
-	today := time.Now().Truncate(24 * time.Hour)
+	today := time.Now().UTC().Truncate(24 * time.Hour)
 	weekAgo := today.AddDate(0, 0, -7)
 	monthAgo := today.AddDate(0, -1, 0)
-	now := time.Now()
+	now := time.Now().UTC()
 
 	activeWorkers, err := s.repo.GetCurrentlyWorking(ctx, companyCode)
 	if err != nil {
