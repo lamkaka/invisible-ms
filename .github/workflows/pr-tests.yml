@@ -23,8 +23,47 @@ jobs:
       - name: Vet
         run: go vet ./...
 
-      - name: Unit test
-        run: go test ./...
+      - name: Run unit tests with JSON output and coverage
+        run: go test -json -coverprofile=coverage.out $(go list ./... | grep -v /e2e) > unit-test.json
+
+      - name: Generate unit test report
+        if: always()
+        run: |
+          python3 -c '
+          import json, os
+
+          counts = {"pass": 0, "fail": 0, "skip": 0}
+          with open("unit-test.json") as f:
+              for line in f:
+                  try:
+                      evt = json.loads(line)
+                      action = evt.get("Action")
+                      if action in counts:
+                          counts[action] += 1
+                  except Exception:
+                      pass
+          total = sum(counts.values())
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as f:
+              f.write("## Unit Test Results\n\n")
+              f.write("- Passed: " + str(counts["pass"]) + "\n")
+              f.write("- Failed: " + str(counts["fail"]) + "\n")
+              f.write("- Skipped: " + str(counts["skip"]) + "\n")
+              f.write("- Total: " + str(total) + "\n\n")
+          '
+
+      - name: Generate coverage report
+        if: always()
+        run: |
+          echo "## Unit Test Coverage" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          go tool cover -func=coverage.out | tail -1 >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload coverage artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-coverage
+          path: apps/api/coverage.out
 
   e2e:
     runs-on: ubuntu-latest
@@ -72,7 +111,39 @@ jobs:
           exit 1
 
       - name: Run e2e tests
-        run: go test ./e2e/...
+        run: go test -json ./e2e/... > e2e-test.json
+
+      - name: Generate e2e test report
+        if: always()
+        run: |
+          python3 -c '
+          import json, os
+
+          counts = {"pass": 0, "fail": 0, "skip": 0}
+          with open("e2e-test.json") as f:
+              for line in f:
+                  try:
+                      evt = json.loads(line)
+                      action = evt.get("Action")
+                      if action in counts:
+                          counts[action] += 1
+                  except Exception:
+                      pass
+          total = sum(counts.values())
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as f:
+              f.write("## E2E Test Results\n\n")
+              f.write("- Passed: " + str(counts["pass"]) + "\n")
+              f.write("- Failed: " + str(counts["fail"]) + "\n")
+              f.write("- Skipped: " + str(counts["skip"]) + "\n")
+              f.write("- Total: " + str(total) + "\n\n")
+          '
+
+      - name: Upload e2e test log artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-test-log
+          path: apps/api/e2e-test.json
 
       - name: Stop server
         if: always()
