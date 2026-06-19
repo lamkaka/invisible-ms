@@ -86,6 +86,12 @@ type dashboardStatsResponse struct {
 	} `json:"cost_tracking"`
 }
 
+type actionTypeResponse struct {
+	ActionType string `json:"action_type"`
+	Keyword    string `json:"keyword"`
+	IsSystem   bool   `json:"is_system"`
+}
+
 func doRequest(t *testing.T, client *http.Client, method, path string, body any) *http.Response {
 	t.Helper()
 	var bodyReader io.Reader
@@ -353,6 +359,79 @@ func getDashboardPage(t *testing.T, client *http.Client, code string) {
 	}
 }
 
+func listCompanyRoles(t *testing.T, client *http.Client, code string) []roleResponse {
+	t.Helper()
+	resp := doRequest(t, client, http.MethodGet, "/api/companies/"+code+"/roles", nil)
+	defer resp.Body.Close()
+	requireStatus(t, resp, http.StatusOK)
+	var list []roleResponse
+	if err := json.NewDecoder(resp.Body).Decode(&list); err != nil {
+		t.Fatalf("decode roles: %v", err)
+	}
+	return list
+}
+
+func listCompanyActionTypes(t *testing.T, client *http.Client, code string) []actionTypeResponse {
+	t.Helper()
+	resp := doRequest(t, client, http.MethodGet, "/api/companies/"+code+"/action-types", nil)
+	defer resp.Body.Close()
+	requireStatus(t, resp, http.StatusOK)
+	var list []actionTypeResponse
+	if err := json.NewDecoder(resp.Body).Decode(&list); err != nil {
+		t.Fatalf("decode action types: %v", err)
+	}
+	return list
+}
+
+func updateStaff(t *testing.T, client *http.Client, id, name string, roles []string, isActive bool) staffResponse {
+	t.Helper()
+	resp := doRequest(t, client, http.MethodPut, "/api/staff/"+id, map[string]any{
+		"name":           name,
+		"assigned_roles": roles,
+		"is_active":      isActive,
+	})
+	defer resp.Body.Close()
+	requireStatus(t, resp, http.StatusOK)
+	var s staffResponse
+	if err := json.NewDecoder(resp.Body).Decode(&s); err != nil {
+		t.Fatalf("decode staff update: %v", err)
+	}
+	return s
+}
+
+func getStaffPage(t *testing.T, client *http.Client) {
+	t.Helper()
+	resp := doRequest(t, client, http.MethodGet, "/staff", nil)
+	defer resp.Body.Close()
+	requireStatus(t, resp, http.StatusOK)
+	ct := resp.Header.Get("Content-Type")
+	if !strings.Contains(ct, "text/html") {
+		t.Fatalf("staff page content-type: got %q, want text/html", ct)
+	}
+}
+
+func getActionsPage(t *testing.T, client *http.Client) {
+	t.Helper()
+	resp := doRequest(t, client, http.MethodGet, "/actions", nil)
+	defer resp.Body.Close()
+	requireStatus(t, resp, http.StatusOK)
+	ct := resp.Header.Get("Content-Type")
+	if !strings.Contains(ct, "text/html") {
+		t.Fatalf("actions page content-type: got %q, want text/html", ct)
+	}
+}
+
+func getRolesPage(t *testing.T, client *http.Client) {
+	t.Helper()
+	resp := doRequest(t, client, http.MethodGet, "/roles", nil)
+	defer resp.Body.Close()
+	requireStatus(t, resp, http.StatusOK)
+	ct := resp.Header.Get("Content-Type")
+	if !strings.Contains(ct, "text/html") {
+		t.Fatalf("roles page content-type: got %q, want text/html", ct)
+	}
+}
+
 func TestEndToEnd_CRUDCycle(t *testing.T) {
 	skipIfNoEmulator(t)
 	client := &http.Client{Timeout: 10 * time.Second}
@@ -380,10 +459,63 @@ func TestEndToEnd_CRUDCycle(t *testing.T) {
 	updateRole(t, client, companyCode, "CLEANING", 20.00)
 	addRole(t, client, companyCode, "SECURITY", 25.00)
 
+	// List roles and verify
+	rolesList := listCompanyRoles(t, client, companyCode)
+	foundCleaning := false
+	foundSecurity := false
+	for _, r := range rolesList {
+		if r.Name == "CLEANING" {
+			foundCleaning = true
+			if r.HourlyRate != 20.00 {
+				t.Fatalf("CLEANING rate: got %f, want 20.00", r.HourlyRate)
+			}
+		}
+		if r.Name == "SECURITY" {
+			foundSecurity = true
+			if r.HourlyRate != 25.00 {
+				t.Fatalf("SECURITY rate: got %f, want 25.00", r.HourlyRate)
+			}
+		}
+	}
+	if !foundCleaning {
+		t.Fatal("CLEANING role not found in list")
+	}
+	if !foundSecurity {
+		t.Fatal("SECURITY role not found in list")
+	}
+
 	// Action types
 	createActionType(t, client, companyCode, "BREAK_START", "BREAK")
 	updateActionTypeKeyword(t, client, companyCode, "BREAK_START", "PAUSE")
 	deleteActionType(t, client, companyCode, "BREAK_START")
+
+	// List action types and verify system types are present
+	actionTypes := listCompanyActionTypes(t, client, companyCode)
+	foundCheckIn := false
+	foundCheckOut := false
+	for _, at := range actionTypes {
+		if at.ActionType == "CHECK_IN" {
+			foundCheckIn = true
+			if !at.IsSystem {
+				t.Fatal("CHECK_IN should be a system action type")
+			}
+		}
+		if at.ActionType == "CHECK_OUT" {
+			foundCheckOut = true
+			if !at.IsSystem {
+				t.Fatal("CHECK_OUT should be a system action type")
+			}
+		}
+		if at.ActionType == "BREAK_START" {
+			t.Fatal("BREAK_START should have been deleted")
+		}
+	}
+	if !foundCheckIn {
+		t.Fatal("CHECK_IN action type not found")
+	}
+	if !foundCheckOut {
+		t.Fatal("CHECK_OUT action type not found")
+	}
 
 	// Staff
 	staff := createStaff(t, client, "+1234567890", "Alice", companyCode, []string{"CLEANING"})
@@ -400,6 +532,16 @@ func TestEndToEnd_CRUDCycle(t *testing.T) {
 	}
 	assignRole(t, client, staff.StaffID, "SECURITY")
 	unassignRole(t, client, staff.StaffID, "SECURITY")
+
+	// Update staff
+	updatedStaff := updateStaff(t, client, staff.StaffID, "Alice Updated", []string{"CLEANING"}, true)
+	if updatedStaff.Name != "Alice Updated" {
+		t.Fatalf("updated staff name: got %q, want Alice Updated", updatedStaff.Name)
+	}
+	staffByID = getStaff(t, client, staff.StaffID)
+	if staffByID.Name != "Alice Updated" {
+		t.Fatalf("retrieved staff name after update: got %q, want Alice Updated", staffByID.Name)
+	}
 
 	// Delete role after it is no longer assigned
 	deleteRole(t, client, companyCode, "SECURITY")
@@ -440,4 +582,9 @@ func TestEndToEnd_CRUDCycle(t *testing.T) {
 		t.Fatalf("today cost: got %f, want > 0", stats.CostTracking.TodayCost)
 	}
 	getDashboardPage(t, client, companyCode)
+
+	// HTML page endpoints
+	getStaffPage(t, client)
+	getActionsPage(t, client)
+	getRolesPage(t, client)
 }
